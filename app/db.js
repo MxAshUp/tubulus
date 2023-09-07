@@ -1,13 +1,8 @@
 const mongoose = require('mongoose');
 const EventEmitter = require('events');
-const crypto = require('crypto');
-
-function computeHash(data) {
-    return crypto
-        .createHash('md5')
-        .update(JSON.stringify(data))
-        .digest('hex');
-}
+const { defer, from } = require('rxjs');
+const { mergeAll } = require('rxjs/operators');
+const { hashString } = require('./hash');
 
 function addHashToSchema(schema) {
 
@@ -25,7 +20,7 @@ function addHashToSchema(schema) {
         };
     
         // Computing hash and updating the 'hash' field
-        this.hash = computeHash(dataToHash);
+        this.hash = hashString('md5', dataToHash);
     
         next();
     });
@@ -93,8 +88,13 @@ module.exports.setup = function setup(options = {}) {
 
     const Resource = mongoose.model('Resource', resourceSchema);
 
+    const fromResourceFind = (query) => defer(() => from(Resource.find(query))).pipe(
+        mergeAll(),
+    );
+
     return {
         Resource,
-        resourceEvents
+        resourceEvents,
+        fromResourceFind
     }
 }
