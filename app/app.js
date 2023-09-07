@@ -1,8 +1,7 @@
-const mongoose = require('mongoose');
-const { from, concat, combineLatest, of, fromEvent } = require('rxjs');
+const { from, concat, combineLatest, of, fromEvent, pipe } = require('rxjs');
 const { filter, mergeMap, map } = require('rxjs/operators');
 const db = require('./db');
-const { getMatchingHandlers } = require('./handlers.js');
+const { getMatchingHandlers } = require('./handlers');
 
 const {
     Resource,
@@ -10,7 +9,7 @@ const {
 } = db.setup();
 
 (async() => {
-    console.log("INITIAL:", (await Resource.find({})).length);
+    console.log("INITIAL:", (await Resource.find({})));
     await Resource.deleteMany({});
     console.log("INITIAL:", (await Resource.find({})).length);
     setTimeout(() => {
@@ -30,17 +29,12 @@ const initialResources$ = from(Resource.find({ handled: false, orphaned: false }
     mergeMap(resources => from(resources))
 );
 
-
 // Create an observable for new unhandled resources using change streams
 const newResources$ = fromEvent(resourceEvents, 'insert').pipe(
     filter(doc => !doc.handled && !doc.orphaned),
 );
 
-// Concatenate the initial resources and new resources into one observable
-const allUnhandledResources$ = concat(initialResources$, newResources$);
-
-// Create a stream that periodically checks for unhandled resources
-const newResourceDataToCreate$ = allUnhandledResources$.pipe(
+const resourceHandlePipe = pipe(
     // Find matching handlers, return handler/resource pair
     mergeMap((resource) => {
         const handlers = getMatchingHandlers(resource);
@@ -51,6 +45,7 @@ const newResourceDataToCreate$ = allUnhandledResources$.pipe(
         } else {
             resource.handled = true;
         }
+
         resource.save();
         return combineLatest([
             of(resource),
@@ -78,9 +73,11 @@ const newResourceDataToCreate$ = allUnhandledResources$.pipe(
         // TODO - maybe respect option like "noDepthInc"
         // TODO - maybe respect option like "hasNoParent"?
         depth: parentResource.depth + 1,
-    }))
+    })),
+    mergeMap(async (newData) => {
+        return await new Resource(newData).save();
+    }),
 );
 
-newResourceDataToCreate$.subscribe(async (newData) => {
-    const newResource = await new Resource(newData).save();
-}, console.log, () => mongoose.disconnect());
+// Create a stream that periodically checks for unhandled resources
+concat(initialResources$, newResources$).pipe(resourceHandlePipe).subscribe();
