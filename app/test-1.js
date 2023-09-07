@@ -5,7 +5,8 @@ const { getMatchingHandlers } = require('./handlers');
 
 const {
     Resource,
-    resourceEvents
+    resourceEvents,
+    fromResourceFind
 } = db.setup();
 
 (async() => {
@@ -23,30 +24,27 @@ const {
     // mongoose.disconnect();
 })();
 
-// Create an observable of unhandled resources already in the database
-// TODO - maybe other criteria like depth, etc...
-const initialResources$ = from(Resource.find({ handled: false, orphaned: false })).pipe(
-    mergeMap(resources => from(resources))
-);
 
-// Create an observable for new unhandled resources using change streams
+const unhandledResources$ = fromResourceFind({ handled: false, orphaned: false });
+const unhandledTopLevelResources$ = fromResourceFind({ handled: false, orphaned: false, depth: 0 });
+const orphanedResources$ = fromResourceFind({ handled: false, orphaned: true });
+
 const newResources$ = fromEvent(resourceEvents, 'insert').pipe(
     filter(doc => !doc.handled && !doc.orphaned),
 );
 
 const resourceHandlePipe = pipe(
-    // Find matching handlers, return handler/resource pair
     mergeMap((resource) => {
         const handlers = getMatchingHandlers(resource);
-        // Mark the resource as handled or saved
-
+        
+        // Update the resource's status
         if(!handlers.length) {
             resource.orphaned = true;
         } else {
             resource.handled = true;
         }
-
         resource.save();
+
         return combineLatest([
             of(resource),
             from(handlers)
@@ -80,4 +78,4 @@ const resourceHandlePipe = pipe(
 );
 
 // Create a stream that periodically checks for unhandled resources
-concat(initialResources$, newResources$).pipe(resourceHandlePipe).subscribe();
+concat(unhandledResources$, newResources$).pipe(resourceHandlePipe).subscribe();
