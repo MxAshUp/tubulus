@@ -44,13 +44,13 @@ function eventifySchema(schema) {
     return events;
 }
 
-module.exports.setup = function setup(options = {}) {
+module.exports.setup = async function setup(options = {}) {
     const {
         mongoUrl = 'mongodb://localhost:27017/dance-pdx',
     } = options;
 
     // Connect to MongoDB
-    mongoose.connect(mongoUrl, {
+    await mongoose.connect(mongoUrl, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     });
@@ -74,12 +74,28 @@ module.exports.setup = function setup(options = {}) {
             type: Number,
             default: 0,
         },
+        parentHandlerHash: String,
         parentResource: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Resource' // Reference to the same collection
         },
     }, {
-        timestamps : true
+        timestamps : true,
+        methods: {
+            isFromCache: function() {
+                return !!this.$locals?.fromCache;
+            }
+        },
+        statics: {
+            getHandledCache: async function(parentResourceId, parentHandlerHash) {
+                // Maybe the result of this handler already has cached resources
+                const cachedResources = await Resource.find({parentResource: parentResourceId, parentHandlerHash: parentHandlerHash});
+                return cachedResources.map((res) => {
+                    res.$locals.fromCache = true;
+                    return res;
+                });
+            }
+        }
     });
 
     addHashToSchema(resourceSchema);

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { getFinalUrl } = require('./get-final-url');
-const { hashString } = require('./hash');
+const { hashFunction } = require('./hash');
+const cheerio = require('cheerio');
 
 const handlers = module.exports.handlers = [
     {
@@ -47,10 +48,47 @@ const handlers = module.exports.handlers = [
                 throw error;
             }
         }
+    },
+    {
+        criteria: (resource) => resource.type === 'html' && /wikipedia\.org/i.test(resource.meta?.url),
+        handle: (resource) => {
+            const $ = cheerio.load(resource.data);
+            return [
+                {
+                    type: 'json',
+                    meta: {
+                        url: resource.meta.url,
+                    },
+                    data: {
+                        title: $('title').text().trim(),
+                        image: $('meta[property="og:image"]').attr('content'),
+                        content: $('#mw-content-text').text().trim().slice(0,100),
+                    }
+                }
+            ]
+        }
+    },
+    {
+        criteria: (resource) => resource.type === 'html',
+        handle: async (resource) => {
+            const $ = cheerio.load(resource.data);
+            const imageUrl = $('meta[property="og:image"]').attr('content');
+            if(!imageUrl) return;
+            const {data: imageData} = await axios.get(imageUrl, {responseType: 'arraybuffer'});
+            return [
+                {
+                    type: 'image',
+                    meta: {
+                        url: imageUrl,
+                    },
+                    data: imageData,
+                }
+            ]
+        }
     }
 ].map((handler) => ({
     ...handler,
-    hash: hashString('sha256', handler.handle.toString())
+    hash: hashFunction(handler.handle)
 }));
 
 module.exports.getMatchingHandlers = (resource) => {
