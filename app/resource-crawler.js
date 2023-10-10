@@ -1,5 +1,5 @@
-const { from, concat, combineLatest, of, fromEvent, pipe, merge } = require('rxjs');
-const { filter, mergeMap, map, tap } = require('rxjs/operators');
+const { from, combineLatest, of, fromEvent, pipe } = require('rxjs');
+const { filter, mergeMap, expand } = require('rxjs/operators');
 const db = require('./db');
 const { getMatchingHandlers } = require('./handlers');
 
@@ -11,11 +11,22 @@ module.exports.resourceCrawler = async () => {
         fromResourceFind
     } = await db.setup();
 
+    // Some possible observables to use
     const topResources$ =               fromResourceFind({ depth: 0 });
     const unhandledResources$ =         fromResourceFind({ handled: false, orphaned: false });
     const unhandledTopLevelResources$ = fromResourceFind({ handled: false, orphaned: false, depth: 0 });
     const orphanedResources$ =          fromResourceFind({ handled: false, orphaned: true });
 
+    const newResources$ = fromEvent(resourceEvents, 'insert').pipe(
+        filter(doc => !doc.handled && !doc.orphaned),
+    );
+
+    const updatedCachedResources$ = fromEvent(resourceEvents, 'update').pipe(
+        filter(doc => doc.isFromCache() && !doc.handled && !doc.orphaned),
+    );
+
+
+    // The main handler of a resource, outputs 0 to many resources
     const resourceHandleTick = pipe(
 
         // Takes a resource, and outputs an array of that resource paired with each matched handler
@@ -72,21 +83,12 @@ module.exports.resourceCrawler = async () => {
         mergeMap((resource) => resource.save()),
     );
 
-    const newResources$ = fromEvent(resourceEvents, 'insert').pipe(
-        filter(doc => !doc.handled && !doc.orphaned),
+    // Recursively take the output of resourceHandleTick and feed it into itself
+    const resourceHandleRecursive = pipe(
+        expand((resource) => of(resource).pipe(resourceHandleTick)),
     );
 
-    const updatedCachedResources$ = fromEvent(resourceEvents, 'update').pipe(
-        filter(doc => doc.isFromCache() && !doc.handled && !doc.orphaned),
-    );
-
-    // WIP
-    const theMainCrawler$ = concat(
-        topResources$,
-        merge(newResources$, updatedCachedResources$),
-    ).pipe(
-        resourceHandleTick,
-    );
+    const theMainCrawler$ = topResources$.pipe(resourceHandleRecursive);
 
     return {
         theMainCrawler$,
@@ -94,6 +96,8 @@ module.exports.resourceCrawler = async () => {
         unhandledResources$,
         unhandledTopLevelResources$,
         orphanedResources$,
+        newResources$,
+        updatedCachedResources$,
         Resource,
     }
 }
