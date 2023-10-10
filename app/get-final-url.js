@@ -15,7 +15,7 @@ module.exports.getFinalUrl = async function getFinalUrl(url, redirectCount = 0) 
         const status = response.status;
 
         if (status >= 200 && status < 300) {
-            return response.config.url; // Return the final URL
+            return {url: response.config.url, headers: response.headers}; // Return the final URL
         } else if (status >= 300 && status <= 399) {
             const redirectUrl = response.headers.location;
             if(!redirectUrl) {
