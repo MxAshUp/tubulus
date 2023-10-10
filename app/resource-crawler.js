@@ -1,7 +1,22 @@
-const { from, combineLatest, of, fromEvent, pipe } = require('rxjs');
-const { filter, mergeMap, expand } = require('rxjs/operators');
+const { from, combineLatest, isObservable, of, fromEvent, pipe } = require('rxjs');
+const { filter, mergeMap, expand, map } = require('rxjs/operators');
 const db = require('./db');
 const { getMatchingHandlers } = require('./handlers');
+
+const toObservable = (input) => {
+    // If it's already an observable, return as-is
+    if (isObservable(input)) {
+      return input;
+    }
+    
+    // If it's an array, convert to observable stream
+    if (Array.isArray(input)) {
+      return from(input);
+    }
+  
+    // If it's an object, convert to an observable
+    return of(input);
+}
 
 module.exports.resourceCrawler = async () => {
 
@@ -56,11 +71,13 @@ module.exports.resourceCrawler = async () => {
             // Maybe the result of this handler already has cached resources
             const cachedResources = await Resource.getHandledCache(resource.id, handler.hash);
             if(cachedResources.length) {
-                return cachedResources.map((cachedResource) => {
-                    cachedResource.handled = false;
-                    cachedResource.orphaned = false;
-                    return cachedResource;
-                });
+                return toObservable(cachedResources).pipe(
+                    map((cachedResource) => {
+                        cachedResource.handled = false;
+                        cachedResource.orphaned = false;
+                        return cachedResource;
+                    })
+                );
             }
 
             // Handle the resource with handler, get the results
@@ -68,12 +85,14 @@ module.exports.resourceCrawler = async () => {
             // @TODO - If undefined, should this be special case?
             if(!handleResults) return [];
             // Create new resources
-            return handleResults.map((newResourceData) => new Resource({
-                ...newResourceData,
-                parentHandlerHash: handler.hash,
-                parentResource: resource._id,
-                depth: resource.depth + 1,
-            }));
+            return toObservable(handleResults).pipe(
+                map((newResourceData) => new Resource({
+                    ...newResourceData,
+                    parentHandlerHash: handler.hash,
+                    parentResource: resource._id,
+                    depth: resource.depth + 1,
+                }))
+            );
         }),
 
         // Flatten
