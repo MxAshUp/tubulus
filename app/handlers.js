@@ -17,13 +17,13 @@ const handlers = module.exports.handlers = [
                 .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
 
             // Create and return a new resource
-            return [{
+            return {
                 type: 'url',
                 meta: {
                     resolved: true,
                 },
                 data: finalUrl
-            }];
+            };
         }
     },
     {
@@ -33,7 +33,7 @@ const handlers = module.exports.handlers = [
                 .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
 
             // Create and return a new resource
-            return [{
+            return {
                 type: 'html',
                 meta: {
                     url: resource.data,
@@ -42,14 +42,14 @@ const handlers = module.exports.handlers = [
                     // ... any other necessary fields
                 },
                 data: response.data
-            }];
+            };
         }
     },
     {
         criteria: (resource) => resource.type === 'html' && /wikipedia\.org/i.test(resource.meta?.url),
         handle: (resource) => {
             const $ = cheerio.load(resource.data);
-            return [{
+            return {
                 type: 'json',
                 meta: {
                     url: resource.meta.url,
@@ -59,7 +59,7 @@ const handlers = module.exports.handlers = [
                     image: $('meta[property="og:image"]').attr('content'),
                     content: $('#mw-content-text').text().trim().slice(0,100),
                 }
-            }];
+            };
         }
     },
     {
@@ -71,13 +71,13 @@ const handlers = module.exports.handlers = [
             const {data: imageData} = await axios.get(imageUrl, {responseType: 'arraybuffer'})
                 .catch(throwFormattedError(`Failed to download image: ${imageUrl}`));
 
-            return [{
+            return {
                 type: 'image',
                 meta: {
                     url: imageUrl,
                 },
                 data: imageData,
-            }];
+            };
         }
     }
 ].map((handler) => ({
