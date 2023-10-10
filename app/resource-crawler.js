@@ -13,6 +13,14 @@ const toObservable = (input) => {
     if (Array.isArray(input)) {
       return from(input);
     }
+
+    // Return undefined means handler results in nothing
+    // Need to have an empty resource end point to ensure cached
+    if(typeof input === "undefined") {
+        return of({
+            type: 'EMPTY',
+        })
+    }
   
     // If it's an object, convert to an observable
     return of(input);
