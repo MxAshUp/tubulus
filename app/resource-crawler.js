@@ -1,5 +1,5 @@
 const { from, combineLatest, isObservable, of, fromEvent, pipe } = require('rxjs');
-const { filter, mergeMap, expand, map } = require('rxjs/operators');
+const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
 const db = require('./db');
 const { getMatchingHandlers } = require('./handlers');
 
@@ -96,7 +96,7 @@ module.exports.resourceCrawler = async () => {
         }),
 
         // Flatten
-        mergeMap((resources) => resources),
+        mergeAll(),
 
         // Save
         mergeMap((resource) => resource.save()),
