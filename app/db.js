@@ -60,7 +60,7 @@ module.exports.setup = async function setup(options = {}) {
         type: String,
         meta: Object,
         data: mongoose.Schema.Types.Mixed,
-    
+
         handled: {
             type: Boolean,
             default: false
