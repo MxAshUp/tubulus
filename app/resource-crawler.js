@@ -82,8 +82,6 @@ module.exports.resourceCrawler = async () => {
 
             // Handle the resource with handler, get the results
             const handleResults = await handler.handle(resource);
-            // @TODO - If undefined, should this be special case?
-            if(!handleResults) return [];
             // Create new resources
             return toObservable(handleResults).pipe(
                 map((newResourceData) => new Resource({
