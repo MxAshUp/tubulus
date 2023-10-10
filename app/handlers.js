@@ -68,7 +68,9 @@ const handlers = module.exports.handlers = [
             const $ = cheerio.load(resource.data);
             const imageUrl = $('meta[property="og:image"]').attr('content');
             if(!imageUrl) return;
-            const {data: imageData} = await axios.get(imageUrl, {responseType: 'arraybuffer'});
+            const {data: imageData} = await axios.get(imageUrl, {responseType: 'arraybuffer'})
+                .catch(throwFormattedError(`Failed to download image: ${imageUrl}`));
+
             return [{
                 type: 'image',
                 meta: {
