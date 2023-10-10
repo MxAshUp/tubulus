@@ -10,6 +10,8 @@ const throwFormattedError = (errorMessage) => (error) => {
 }
 
 const handlers = module.exports.handlers = [
+
+    // Generic url and content-type resolver
     {
         criteria: (resource) => resource.type === 'url' && !resource.meta?.resolved,
         handle: async (resource) => {
@@ -28,12 +30,15 @@ const handlers = module.exports.handlers = [
                     data: finalUrl
                 };
             } catch (e) {
+                // TODO - improve error handling
                 if(/404/.test(e.message)) {
                     return [];
                 }
             }
         }
     },
+
+    // Generic HTML getter
     {
         criteria: (resource) => resource.type === 'url' && resource.meta?.resolved && /^text\/html\b/i.test(resource.meta?.contentType),
         handle: async (resource) => {
@@ -47,12 +52,13 @@ const handlers = module.exports.handlers = [
                     url: resource.data,
                     status: response.status,
                     contentType: response.headers['content-type'],
-                    // ... any other necessary fields
                 },
                 data: response.data
             };
         }
     },
+
+    // Wikipedia html parser
     {
         criteria: (resource) => resource.type === 'html' && /wikipedia\.org/i.test(resource.meta?.url),
         handle: (resource) => {
@@ -70,6 +76,8 @@ const handlers = module.exports.handlers = [
             };
         }
     },
+
+    // Generic image downloader
     {
         criteria: (resource) => resource.type === 'url' && resource.meta?.resolved && /^image\/(jpeg|png)\b/i.test(resource.meta?.contentType),
         handle: async (resource) => {
@@ -87,6 +95,8 @@ const handlers = module.exports.handlers = [
             };
         }
     },
+
+    // Generic html parser for image urls
     {
         criteria: (resource) => resource.type === 'html',
         handle: async (resource) => {
@@ -100,6 +110,8 @@ const handlers = module.exports.handlers = [
             };
         }
     },
+
+    // Hawthorn events: page parser
     {
         criteria: (resource) => resource.type === 'html' && /^https:\/\/hawthornetheatre\.com\/events\/$/i.test(resource.meta?.url),
         handle: (resource) => {
@@ -113,6 +125,8 @@ const handlers = module.exports.handlers = [
             }));
         }
     },
+
+    // Hawthorn events: event parser
     {
         criteria: (resource) => resource.type === 'html' && /^https?:\/\/hawthornetheatre\.com\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i.test(resource.meta?.url),
         handle: (resource) => {
@@ -141,12 +155,46 @@ const handlers = module.exports.handlers = [
             };
         }
     },
+
+    // Etix: Event Parser
+    {
+        criteria: (resource) => resource.type === 'html' && /^https:\/\/event\.etix\.com\/ticket\/online\//i.test(resource.meta?.url),
+        handle: (resource) => {
+            const $ = cheerio.load(resource.data);
+            return {
+                type: 'event',
+                meta: {
+                    url: resource.meta.url,
+                    canonicalUrl: resource.meta.canonicalUrl,
+                },
+                data: {
+                    description: $('.description[itemprop="description"]').text().trim()
+                }
+            }
+        }
+    },
+
+    // Event parser, image getter
     {
         criteria: (resource) => resource.type === 'event' && resource.data?.imageUrl,
         handle: async (resource) => {
             return {
                 type: 'url',
                 data: resource.data?.imageUrl,
+            };
+        }
+    },
+
+    // Event parser, ticket url getter
+    {
+        criteria: (resource) => resource.type === 'event' && resource.data?.ticketUrl,
+        handle: async (resource) => {
+            return {
+                type: 'url',
+                meta: {
+                    canonicalUrl: resource.meta.url,
+                },
+                data: resource.data?.ticketUrl,
             };
         }
     }
