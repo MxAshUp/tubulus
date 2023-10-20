@@ -2,6 +2,14 @@ const axios = require('axios');
 const { getFinalUrl } = require('./get-final-url');
 const { hashFunction } = require('./hash');
 const cheerio = require('cheerio');
+const {
+    every,
+    isEvent,
+    isHtml,
+    urlOfPageMatches,
+    isUnresolvedUrl,
+    contentTypeOfUrlMatches,
+} = require('./handlers-criteria');
 
 const throwFormattedError = (errorMessage) => (error) => {
     const formattedError = new Error(`${errorMessage}: ${error.message}`);
@@ -13,7 +21,7 @@ const handlers = module.exports.handlers = [
 
     // Generic url and content-type resolver
     {
-        criteria: (resource) => resource.type === 'url' && !resource.meta?.resolved,
+        criteria: isUnresolvedUrl,
         handle: async (resource) => {
             try {
 
@@ -24,6 +32,7 @@ const handlers = module.exports.handlers = [
                 return {
                     type: 'url',
                     meta: {
+                        ...(resource.meta ? resource.meta : {}),
                         resolved: true,
                         contentType: headers['content-type'],
                     },
@@ -32,7 +41,7 @@ const handlers = module.exports.handlers = [
             } catch (e) {
                 // TODO - improve error handling
                 if(/404/.test(e.message)) {
-                    return [];
+                    return;
                 }
             }
         }
@@ -40,7 +49,7 @@ const handlers = module.exports.handlers = [
 
     // Generic HTML getter
     {
-        criteria: (resource) => resource.type === 'url' && resource.meta?.resolved && /^text\/html\b/i.test(resource.meta?.contentType),
+        criteria: contentTypeOfUrlMatches(/^text\/html\b/i),
         handle: async (resource) => {
             const response = await axios.get(resource.data)
                 .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
@@ -49,6 +58,7 @@ const handlers = module.exports.handlers = [
             return {
                 type: 'html',
                 meta: {
+                    ...(resource.meta ? resource.meta : {}),
                     url: resource.data,
                     status: response.status,
                     contentType: response.headers['content-type'],
@@ -60,7 +70,7 @@ const handlers = module.exports.handlers = [
 
     // Wikipedia html parser
     {
-        criteria: (resource) => resource.type === 'html' && /wikipedia\.org/i.test(resource.meta?.url),
+        criteria: urlOfPageMatches(/wikipedia\.org/i),
         handle: (resource) => {
             const $ = cheerio.load(resource.data);
             return {
@@ -79,7 +89,7 @@ const handlers = module.exports.handlers = [
 
     // Generic image downloader
     {
-        criteria: (resource) => resource.type === 'url' && resource.meta?.resolved && /^image\/(jpeg|png)\b/i.test(resource.meta?.contentType),
+        criteria: contentTypeOfUrlMatches(/^image\/(jpeg|png)\b/i),
         handle: async (resource) => {
 
             const {data: imageData, headers} = await axios.get(resource.data, {responseType: 'arraybuffer'})
@@ -98,7 +108,7 @@ const handlers = module.exports.handlers = [
 
     // Generic html parser for image urls
     {
-        criteria: (resource) => resource.type === 'html',
+        criteria: isHtml,
         handle: async (resource) => {
             const $ = cheerio.load(resource.data);
             const imageUrl = $('meta[property="og:image"]').attr('content');
@@ -113,7 +123,7 @@ const handlers = module.exports.handlers = [
 
     // Hawthorn events: page parser
     {
-        criteria: (resource) => resource.type === 'html' && /^https:\/\/hawthornetheatre\.com\/events\/$/i.test(resource.meta?.url),
+        criteria: urlOfPageMatches(/^https:\/\/hawthornetheatre\.com\/events\/$/i),
         handle: (resource) => {
             const $ = cheerio.load(resource.data);
 
@@ -128,7 +138,7 @@ const handlers = module.exports.handlers = [
 
     // Hawthorn events: event parser
     {
-        criteria: (resource) => resource.type === 'html' && /^https?:\/\/hawthornetheatre\.com\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i.test(resource.meta?.url),
+        criteria: urlOfPageMatches(/^https?:\/\/hawthornetheatre\.com\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i),
         handle: (resource) => {
             const $ = cheerio.load(resource.data);
             const tagLine = $('.eventTagLine').text().trim();
@@ -158,7 +168,7 @@ const handlers = module.exports.handlers = [
 
     // Etix: Event Parser
     {
-        criteria: (resource) => resource.type === 'html' && /^https:\/\/event\.etix\.com\/ticket\/online\//i.test(resource.meta?.url),
+        criteria: urlOfPageMatches(/^https:\/\/event\.etix\.com\/ticket\/online\//i),
         handle: (resource) => {
             const $ = cheerio.load(resource.data);
             return {
@@ -176,7 +186,7 @@ const handlers = module.exports.handlers = [
 
     // Event parser, image getter
     {
-        criteria: (resource) => resource.type === 'event' && resource.data?.imageUrl,
+        criteria: every(isEvent, (resource) => resource.data?.imageUrl),
         handle: async (resource) => {
             return {
                 type: 'url',
@@ -187,7 +197,7 @@ const handlers = module.exports.handlers = [
 
     // Event parser, ticket url getter
     {
-        criteria: (resource) => resource.type === 'event' && resource.data?.ticketUrl,
+        criteria: every(isEvent, (resource) => resource.data?.ticketUrl),
         handle: async (resource) => {
             return {
                 type: 'url',
