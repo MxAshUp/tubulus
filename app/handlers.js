@@ -2,6 +2,7 @@ const axios = require('axios');
 const { getFinalUrl } = require('./get-final-url');
 const { hashFunction } = require('./hash');
 const cheerio = require('cheerio');
+const { throwFormattedError } = require('./utilities');
 const {
     every,
     isEvent,
@@ -10,12 +11,6 @@ const {
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
 } = require('./handlers-criteria');
-
-const throwFormattedError = (errorMessage) => (error) => {
-    const formattedError = new Error(`${errorMessage}: ${error.message}`);
-    formattedError.stack = error.stack;
-    throw formattedError;
-}
 
 const handlers = module.exports.handlers = [
 
