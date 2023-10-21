@@ -7,159 +7,151 @@ const {
     every,
     isEvent,
     isHtml,
+    hostEquals,
     urlOfPageMatches,
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
+    urlMatchesPath,
 } = require('./handlers-criteria');
 
-const handlers = module.exports.handlers = [
+const urlResolver = {
+    criteria: isUnresolvedUrl,
+    handle: async (resource) => {
+        try {
 
-    // Generic url and content-type resolver
-    {
-        criteria: isUnresolvedUrl,
-        handle: async (resource) => {
-            try {
-
-                const {url: finalUrl, headers} = await getFinalUrl(resource.data)
-                    .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
-    
-                // Create and return a new resource
-                return {
-                    type: 'url',
-                    meta: {
-                        ...(resource.meta ? resource.meta : {}),
-                        resolved: true,
-                        contentType: headers['content-type'],
-                    },
-                    data: finalUrl
-                };
-            } catch (e) {
-                // TODO - improve error handling
-                if(/404/.test(e.message)) {
-                    return;
-                }
-            }
-        }
-    },
-
-    // Generic HTML getter
-    {
-        criteria: contentTypeOfUrlMatches(/^text\/html\b/i),
-        handle: async (resource) => {
-            const response = await axios.get(resource.data)
+            const {url: finalUrl, headers} = await getFinalUrl(resource.data)
                 .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
 
             // Create and return a new resource
             return {
-                type: 'html',
+                type: 'url',
                 meta: {
                     ...(resource.meta ? resource.meta : {}),
-                    url: resource.data,
-                    status: response.status,
-                    contentType: response.headers['content-type'],
-                },
-                data: response.data
-            };
-        }
-    },
-
-    // Wikipedia html parser
-    {
-        criteria: urlOfPageMatches(/wikipedia\.org/i),
-        handle: (resource) => {
-            const $ = cheerio.load(resource.data);
-            return {
-                type: 'json',
-                meta: {
-                    url: resource.meta.url,
-                },
-                data: {
-                    title: $('title').text().trim(),
-                    image: $('meta[property="og:image"]').attr('content'),
-                    content: $('#mw-content-text').text().trim().slice(0,100),
-                }
-            };
-        }
-    },
-
-    // Generic image downloader
-    {
-        criteria: contentTypeOfUrlMatches(/^image\/(jpeg|png)\b/i),
-        handle: async (resource) => {
-
-            const {data: imageData, headers} = await axios.get(resource.data, {responseType: 'arraybuffer'})
-                    .catch(throwFormattedError(`Failed to download image: ${resource.data}`));
-
-            return {
-                type: 'image',
-                meta: {
-                    url: resource.data,
+                    resolved: true,
                     contentType: headers['content-type'],
                 },
-                data: imageData,
+                data: finalUrl
             };
+        } catch (e) {
+            // TODO - improve error handling
+            if(/404/.test(e.message)) {
+                return;
+            }
         }
-    },
+    }
+};
 
-    // Generic html parser for image urls
-    {
-        criteria: isHtml,
-        handle: async (resource) => {
-            const $ = cheerio.load(resource.data);
-            const imageUrl = $('meta[property="og:image"]').attr('content');
-            if(!imageUrl) return;
+const url2Html = {
+    criteria: contentTypeOfUrlMatches(/^text\/html\b/i),
+    handle: async (resource) => {
+        const response = await axios.get(resource.data)
+            .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
 
-            return {
-                type: 'url',
-                data: imageUrl,
-            };
-        }
-    },
+        // Create and return a new resource
+        return {
+            type: 'html',
+            meta: {
+                ...(resource.meta ? resource.meta : {}),
+                url: resource.data,
+                status: response.status,
+                contentType: response.headers['content-type'],
+            },
+            data: response.data
+        };
+    }
+};
 
-    // Hawthorn events: page parser
-    {
-        criteria: urlOfPageMatches(/^https:\/\/hawthornetheatre\.com\/events\/$/i),
-        handle: (resource) => {
-            const $ = cheerio.load(resource.data);
+// Restricts the conditions of an array of handlers to a specific URL domain 
+const scopeHandlers = (predicate) => (handlers) => handlers.map(({criteria, ...handlerArgs}) => ({
+    criteria: every(predicate, criteria),
+    ...handlerArgs,
+}));
 
-            const eventPageUrls = $('a#eventTitle').map((i, el) => $(el).attr('href')).get();
+const scopeWikipedia = scopeHandlers(hostEquals('wikipedia.org'));
 
-            return eventPageUrls.map((url) => ({
-                type: 'url',
-                data: url
-            }));
-        }
-    },
+const scopeHawthorne = scopeHandlers(hostEquals('hawthornetheatre.com'));
 
-    // Hawthorn events: event parser
-    {
-        criteria: urlOfPageMatches(/^https?:\/\/hawthornetheatre\.com\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i),
-        handle: (resource) => {
-            const $ = cheerio.load(resource.data);
-            const tagLine = $('.eventTagLine').text().trim();
-            const presentedBy = tagLine.match(/^(?<host>.+)\s+presents:/i)?.groups?.host;
-            return {
-                type: 'event',
-                meta: {
-                    url: resource.meta.url,
-                },
-                data: {
-                    title: $('#eventTitle').text().trim(),
-                    tagLine: $('.eventTagLine').text().trim(),
-                    presentedBy,
-                    date: $('.eventStDate').first().text().trim(),
-                    time: $('.eventDoorStartDate').first().text().trim(),
-                    cost: $('.eventCost').first().text().trim(),
-                    imageUrl: $('img.singleEventImage').attr('src'),
-                    ticketUrl: $('[id^="ctaspa"] a').attr('href'),
-                    isSoldOut: !!$('[id^="ctaspa"] a:icontains("sold out")').length,
-                    description: $('.singleEventDescription').first().text().trim(),
-                    ageText: $('.eventAgeRestriction').first().text().trim(),
-                    venueName: $('.venueLink').first().text().trim(),
-                }
-            };
-        }
-    },
+const html2Object = (type, selectors) => (resource) => {
+    const $ = cheerio.load(resource.data);
+    const jsonData = Object.fromEntries(Object.entries(selectors).map(([key, selector]) => [key, selector($)]));
+    return {
+        type,
+        meta: {
+            url: resource.meta.url,
+        },
+        data: jsonData,
+    };
+};
+
+const html2Value = (type, selector) => (resource) => {
+    const $ = cheerio.load(resource.data);
+    const data = selector($);
+    return {
+        type,
+        meta: {
+            url: resource.meta.url,
+        },
+        data,
+    };
+};
+
+const handlers = module.exports.handlers = [
+
+    // Generic url and content-type resolver
+    urlResolver,
+
+    // Generic HTML getter
+    url2Html,
+
+    ...scopeWikipedia([
+        {
+            criteria: isHtml,
+            handle: html2Object('json', {
+                title: ($) =>   $('title').text().trim(),
+                image: ($) =>   $('meta[property="og:image"]').attr('content'),
+                content: ($) => $('#mw-content-text').text().trim().slice(0,100),
+            })
+        },
+        {
+            criteria: isHtml,
+            handle: html2Value('url', $ => $('meta[property="og:image"]').attr('content')),
+        },
+    ]),
+
+    ...scopeHawthorne([
+        {
+            // Events page
+            criteria: urlMatchesPath(/^\/events\/$/i),
+            handle: (resource) => {
+                const $ = cheerio.load(resource.data);
+    
+                const eventPageUrls = $('a#eventTitle').map((i, el) => $(el).attr('href')).get();
+    
+                return eventPageUrls.map((url) => ({
+                    type: 'url',
+                    data: url
+                }));
+            }
+        },
+        {
+            // Hawthorn events: event parser
+            criteria: urlMatchesPath(/^\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i),
+            handle: html2Object('event', {
+                title: $ =>       $('#eventTitle').text().trim(),
+                tagLine: $ =>     $('.eventTagLine').text().trim(),
+                presentedBy: $ => $('.eventTagLine').text().trim().match(/^(?<host>.+)\s+presents:/i)?.groups?.host,
+                date: $ =>        $('.eventStDate').first().text().trim(),
+                time: $ =>        $('.eventDoorStartDate').first().text().trim(),
+                cost: $ =>        $('.eventCost').first().text().trim(),
+                imageUrl: $ =>    $('img.singleEventImage').attr('src'),
+                ticketUrl: $ =>   $('[id^="ctaspa"] a').attr('href'),
+                isSoldOut: $ =>   !!$('[id^="ctaspa"] a:icontains("sold out")').length,
+                description: $ => $('.singleEventDescription').first().text().trim(),
+                ageText: $ =>     $('.eventAgeRestriction').first().text().trim(),
+                venueName: $ =>   $('.venueLink').first().text().trim(),
+            })
+        },
+    ]),
 
     // Etix: Event Parser
     {
@@ -186,6 +178,25 @@ const handlers = module.exports.handlers = [
             return {
                 type: 'url',
                 data: resource.data?.imageUrl,
+            };
+        }
+    },
+
+    // Generic image downloader
+    {
+        criteria: contentTypeOfUrlMatches(/^image\/(jpeg|png)\b/i),
+        handle: async (resource) => {
+
+            const {data: imageData, headers} = await axios.get(resource.data, {responseType: 'arraybuffer'})
+                    .catch(throwFormattedError(`Failed to download image: ${resource.data}`));
+
+            return {
+                type: 'image',
+                meta: {
+                    url: resource.data,
+                    contentType: headers['content-type'],
+                },
+                data: imageData,
             };
         }
     },

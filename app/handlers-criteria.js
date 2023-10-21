@@ -1,3 +1,5 @@
+const { URL } = require('url');
+
 const typeEquals             = (type) => (resource) => resource.type === type;
 
 const some                   = (...predicates) => (val) => predicates.some(val);
@@ -15,6 +17,21 @@ const urlOfPageMatches = (urlPattern) => every(isHtml, metaUrlMatches(urlOfPageM
 const isUnresolvedUrl        = every(isUrl, (resource) => !resource.meta?.resolved);
 const isResolvedUrl          = every(isUrl, (resource) => !resource.meta?.resolved);
 
+const urlHasHost = (url, host) => new URL(url).host === host;
+
+const urlMatchesPath = (url, pathPattern) => pathPattern.test(new URL(url).pathname);
+
+const hostEquals = (host) => (resource) => {
+    if(isUrl(resource)) {
+        return urlHasHost(resource.data, host);
+    }
+    if(resource.meta?.url) {
+        if(urlHasHost(resource.meta?.url, host)) return true;
+    }
+    if(resource.meta?.canonicalUrl) {
+        return urlHasHost(resource.meta?.canonicalUrl, host);
+    }
+}
 
 const contentTypeOfUrlMatches = (contentTypePattern) => every(isResolvedUrl, metaContentTypeMatches(contentTypePattern));
 
@@ -22,6 +39,8 @@ module.exports = {
     typeEquals,
     some,
     every,
+    hostEquals,
+    urlMatchesPath,
     isEvent,
     isHtml,
     isUrl,
