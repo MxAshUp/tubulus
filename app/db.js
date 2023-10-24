@@ -84,6 +84,16 @@ module.exports.setup = async function setup(options = {}) {
         methods: {
             isFromCache: function() {
                 return !!this.$locals?.fromCache;
+            },
+            setHandled: async function(handlers) {
+                // Update the resource's status
+                if(!handlers.length) {
+                    this.orphaned = true;
+                } else {
+                    this.handled = true;
+                }
+
+                await this.save();
             }
         },
         statics: {
@@ -92,7 +102,18 @@ module.exports.setup = async function setup(options = {}) {
                 const cachedResources = await Resource.find({parentResource: parentResourceId, parentHandlerHash: parentHandlerHash});
                 return cachedResources.map((res) => {
                     res.$locals.fromCache = true;
+                    res.handled = false;
+                    res.orphaned = false;
                     return res;
+                });
+            },
+            create: function(newResourceData, parentHandler, parentResource) {
+
+                return new Resource({
+                    ...newResourceData,
+                    parentHandlerHash: parentHandler.hash,
+                    parentResource: parentResource._id,
+                    depth: parentResource.depth + 1,
                 });
             }
         }

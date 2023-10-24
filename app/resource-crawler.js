@@ -58,14 +58,8 @@ module.exports.resourceCrawler = async () => {
         mergeMap((resource) => {
             const handlers = getMatchingHandlers(resource);
             
-            // Update the resource's status
-            if(!handlers.length) {
-                resource.orphaned = true;
-            } else {
-                resource.handled = true;
-            }
-
-            resource.save();
+            // @TODO - should be await
+            resource.setHandled(handlers);
 
             return combineLatest([
                 of(resource),
@@ -79,25 +73,14 @@ module.exports.resourceCrawler = async () => {
             // Maybe the result of this handler already has cached resources
             const cachedResources = await Resource.getHandledCache(resource.id, handler.hash);
             if(cachedResources.length) {
-                return toObservable(cachedResources).pipe(
-                    map((cachedResource) => {
-                        cachedResource.handled = false;
-                        cachedResource.orphaned = false;
-                        return cachedResource;
-                    })
-                );
+                return toObservable(cachedResources);
             }
 
             // Handle the resource with handler, get the results
             const handleResults = await handler.handle(resource);
             // Create new resources
             return toObservable(handleResults).pipe(
-                map((newResourceData) => new Resource({
-                    ...newResourceData,
-                    parentHandlerHash: handler.hash,
-                    parentResource: resource._id,
-                    depth: resource.depth + 1,
-                }))
+                map((newResourceData) => Resource.create(newResourceData, handler, resource))
             );
         }),
 
