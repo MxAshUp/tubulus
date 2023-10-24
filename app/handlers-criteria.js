@@ -1,38 +1,40 @@
 const { URL } = require('url');
 
+// Type Checks
 const typeEquals             = (type) => (resource) => resource.type === type;
-
-const some                   = (...predicates) => (val) => predicates.some(val);
-const every                  = (...predicates) => (val) => predicates.some(val);
-
 const isEvent                = typeEquals('event');
 const isHtml                 = typeEquals('html');
 const isUrl                  = typeEquals('url');
 
-const metaUrlMatches         = (urlPattern) => (resource) => urlPattern.test(resource.meta?.url);
-const metaContentTypeMatches = (contentTypePattern) => (resource) => contentTypePattern.test(resource.meta?.contentType);
+// Combinators (predicate dispatch)
+const some                   = (...predicates) => (val) => predicates.some((fn) => fn(val));
+const every                  = (...predicates) => (val) => predicates.every((fn) => fn(val));
 
-const urlOfPageMatches = (urlPattern) => every(isHtml, metaUrlMatches(urlOfPageMatches));
-
-const isUnresolvedUrl        = every(isUrl, (resource) => !resource.meta?.resolved);
-const isResolvedUrl          = every(isUrl, (resource) => !resource.meta?.resolved);
-
-const urlHasHost = (url, host) => new URL(url).host === host;
-
+// Url utilities
+const urlHasHost     = (url, host)        => new URL(url).host === host;
 const urlMatchesPath = (url, pathPattern) => pathPattern.test(new URL(url).pathname);
 
-const hostEquals = (host) => (resource) => {
+// Calls a function on the url of a resource 
+const testByUrl = (predicate) => (resource) => {
     if(isUrl(resource)) {
-        return urlHasHost(resource.data, host);
-    }
-    if(resource.meta?.url) {
-        if(urlHasHost(resource.meta?.url, host)) return true;
-    }
-    if(resource.meta?.canonicalUrl) {
-        return urlHasHost(resource.meta?.canonicalUrl, host);
+        return predicate(resource.data);
+    } else if(resource.meta?.url) {
+        return predicate(resource.meta?.url);
     }
 }
 
+// Url conditions
+const pathMatches    = (pathPattern) => testByUrl((url) => urlMatchesPath(url, pathPattern));
+const hostEquals     = (host)        => testByUrl((url) => urlHasHost(url, host));
+const metaUrlMatches = (urlPattern)  => testByUrl((url) => urlPattern.test(url));
+
+// Content-type matching
+const metaContentTypeMatches = (contentTypePattern) => (resource) => contentTypePattern.test(resource.meta?.contentType);
+
+// Complex Compound Conditions
+const urlOfPageMatches        = (urlPattern) => every(isHtml, metaUrlMatches(urlPattern));
+const isUnresolvedUrl         = every(isUrl, (resource) => !resource.meta?.resolved);
+const isResolvedUrl           = every(isUrl, (resource) => resource.meta?.resolved);
 const contentTypeOfUrlMatches = (contentTypePattern) => every(isResolvedUrl, metaContentTypeMatches(contentTypePattern));
 
 module.exports = {
@@ -40,7 +42,7 @@ module.exports = {
     some,
     every,
     hostEquals,
-    urlMatchesPath,
+    pathMatches,
     isEvent,
     isHtml,
     isUrl,
