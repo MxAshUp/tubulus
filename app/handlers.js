@@ -11,7 +11,7 @@ const {
     urlOfPageMatches,
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
-    urlMatchesPath,
+    pathMatches,
 } = require('./handlers-criteria');
 
 const urlResolver = {
@@ -62,14 +62,14 @@ const url2Html = {
 };
 
 // Restricts the conditions of an array of handlers to a specific URL domain 
-const scopeHandlers = (predicate) => (handlers) => handlers.map(({criteria, ...handlerArgs}) => ({
-    criteria: every(predicate, criteria),
+const scopeHandlers = (...predicate) => (handlers) => handlers.map(({criteria, ...handlerArgs}) => ({
+    criteria: every(...predicate, criteria),
     ...handlerArgs,
 }));
 
 const scopeWikipedia = scopeHandlers(hostEquals('wikipedia.org'));
 
-const scopeHawthorne = scopeHandlers(hostEquals('hawthornetheatre.com'));
+const scopeHawthornePages = scopeHandlers(isHtml, hostEquals('hawthornetheatre.com'));
 
 const html2Object = (type, selectors) => (resource) => {
     const $ = cheerio.load(resource.data);
@@ -118,10 +118,10 @@ const handlers = module.exports.handlers = [
         },
     ]),
 
-    ...scopeHawthorne([
+    ...scopeHawthornePages([
         {
             // Events page
-            criteria: urlMatchesPath(/^\/events\/$/i),
+            criteria: pathMatches(/^\/events\/$/i),
             handle: (resource) => {
                 const $ = cheerio.load(resource.data);
     
@@ -135,7 +135,7 @@ const handlers = module.exports.handlers = [
         },
         {
             // Hawthorn events: event parser
-            criteria: urlMatchesPath(/^\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i),
+            criteria: pathMatches(/^\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i),
             handle: html2Object('event', {
                 title: $ =>       $('#eventTitle').text().trim(),
                 tagLine: $ =>     $('.eventTagLine').text().trim(),
@@ -143,7 +143,7 @@ const handlers = module.exports.handlers = [
                 date: $ =>        $('.eventStDate').first().text().trim(),
                 time: $ =>        $('.eventDoorStartDate').first().text().trim(),
                 cost: $ =>        $('.eventCost').first().text().trim(),
-                imageUrl: $ =>    $('img.singleEventImage').attr('src'),
+                imageUrl: $ =>    $('img.singleEventImage').attr('src'),    
                 ticketUrl: $ =>   $('[id^="ctaspa"] a').attr('href'),
                 isSoldOut: $ =>   !!$('[id^="ctaspa"] a:icontains("sold out")').length,
                 description: $ => $('.singleEventDescription').first().text().trim(),
@@ -174,12 +174,10 @@ const handlers = module.exports.handlers = [
     // Event parser, image getter
     {
         criteria: every(isEvent, (resource) => resource.data?.imageUrl),
-        handle: async (resource) => {
-            return {
-                type: 'url',
-                data: resource.data?.imageUrl,
-            };
-        }
+        handle: (resource) => ({
+            type: 'url',
+            data: resource.data?.imageUrl,
+        })
     },
 
     // Generic image downloader
