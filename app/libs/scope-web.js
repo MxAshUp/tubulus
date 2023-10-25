@@ -5,8 +5,8 @@ const {
     every,
 } = require('./scope-utilities');
 
-const isHtml                 = typeEquals('html');
-const isUrl                  = typeEquals('url');
+const isHtml = typeEquals('html');
+const isUrl  = typeEquals('url');
 
 // Url utilities
 const urlHasHost     = (url, host)        => new URL(url).host === host;
