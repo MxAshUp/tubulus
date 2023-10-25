@@ -7,7 +7,7 @@ const every                  = (...predicates) => (val) => predicates.every((fn)
 
 // "Binds" heach handler to all predicates
 const bindScope = (...predicate) => (handlers) => handlers.map(({scope, ...handlerArgs}) => ({
-    scope: predicate.length ? every(...predicate, scope) : scope,
+    scope: scope ? every(...predicate, scope) : every(...predicate),
     ...handlerArgs,
 }));
 

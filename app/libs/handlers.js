@@ -6,6 +6,7 @@ const {
     every,
     typeEquals,
     bindScope,
+    some,
 } = require('./scope-utilities');
 const {
     isHtml,
@@ -63,7 +64,7 @@ const url2HtmlHandler = {
     }
 };
 
-const scopeWikipedia = bindScope(hostEquals('wikipedia.org'));
+const scopeWikipedia = bindScope(isHtml, some(hostEquals('wikipedia.org'), hostEquals('en.wikipedia.org')));
 
 const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
 
@@ -109,9 +110,6 @@ const handlers = module.exports.handlers = [
         },
         {
             transform: html2Value('url', $ => $('meta[property="og:image"]').attr('content')),
-        },
-        {
-            transform: (r) => {console.log(r)}
         },
     ]),
 
