@@ -9,7 +9,7 @@ const { html2Value, html2Object } = require('./libs/web/transformers');
 const scopeWikipedia = bindScope(isHtml, hostMatches(/\bwikipedia.org$/));
 const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
 
-module.exports.handlers = [
+module.exports = [
 
     urlResolveHandler,
     url2HtmlHandler,
