@@ -1,11 +1,7 @@
 const axios = require('axios');
 const { getFinalUrl } = require('../get-final-url');
 const { throwFormattedError } = require('../utilities');
-
-const {
-    isUnresolvedUrl,
-    contentTypeOfUrlMatches,
-} = require('../scope-web');
+const { isUnresolvedUrl, contentTypeOfUrlMatches } = require('./scopes');
 
 module.exports = {
     urlResolveHandler: {

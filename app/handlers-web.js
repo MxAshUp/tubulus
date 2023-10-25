@@ -1,7 +1,7 @@
 const cheerio = require('cheerio');
 
 const { every, typeEquals, bindScope } = require('./libs/scope-utilities');
-const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = require('./libs/scope-web');
+const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = require('./libs/web/scopes');
 
 const { urlResolveHandler, url2HtmlHandler, url2ImageHandler } = require('./libs/web/handlers');
 const { html2Value, html2Object } = require('./libs/web/transformers');

@@ -1,6 +1,6 @@
 const test = require('tape');
 const { typeEquals, every, some } = require('../libs/scope-utilities'); // Replace with your actual file path
-const { isHtml, isUrl, urlHasHost, urlMatchesPath, testByUrl, metaContentTypeMatches } = require('../libs/scope-web'); // Replace with your actual file path
+const { isHtml, isUrl, urlHasHost, urlMatchesPath, testByUrl, metaContentTypeMatches } = require('../libs/web/scopes'); // Replace with your actual file path
 
 test('typeEquals()', (t) => {
     t.plan(3);

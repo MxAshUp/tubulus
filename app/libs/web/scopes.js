@@ -3,7 +3,7 @@ const { URL } = require('url');
 const {
     typeEquals,
     every,
-} = require('./scope-utilities');
+} = require('../scope-utilities');
 
 const isHtml = typeEquals('html');
 const isUrl  = typeEquals('url');
