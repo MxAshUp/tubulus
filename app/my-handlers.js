@@ -93,7 +93,7 @@ module.exports.handlers = [
     // Event parser, ticket url getter
     {
         scope: every(typeEquals('event'), (resource) => resource.data?.ticketUrl),
-        transform: async (resource) => {
+        transform: (resource) => {
             return {
                 type: 'url',
                 meta: {
