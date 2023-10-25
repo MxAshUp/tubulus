@@ -72,17 +72,6 @@ const scopeWikipedia = scopeHandlers(hostEquals('wikipedia.org'));
 
 const scopeHawthornePages = scopeHandlers(isHtml, hostEquals('hawthornetheatre.com'));
 
-// const workflow = (handlers) => handlers.map((handler, i, handlers) => {
-//     handler.uniqueSymbolIdentifier = new Symbol();
-//     if(i > 0) {
-//         const previousHandler = handlers[i-1];
-//         // parent hash check
-//         // parent uniqueSymbolIdentifier check
-//         handler.criteria = every(fromHandler(/*.previousHandler.*/), handler.criteria);
-//     }
-//     return handler;
-// }, []);
-
 const html2Object = (type, selectors) => (resource) => {
     const $ = cheerio.load(resource.data);
     const jsonData = Object.fromEntries(Object.entries(selectors).map(([key, selector]) => [key, selector($)]));
