@@ -6,7 +6,7 @@ const {
     every,
     typeEquals,
     bindScope,
-} = require('./criteria');
+} = require('./scope-utilities');
 const {
     isHtml,
     hostEquals,
@@ -14,7 +14,7 @@ const {
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
     pathMatches,
-} = require('./criteria-web');
+} = require('./scope-web');
 
 const urlResolveHandler = {
     scope: isUnresolvedUrl,
