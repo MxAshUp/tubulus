@@ -32,3 +32,26 @@ module.exports.hashFunction = (fn) => {
 
     return hashString('md5', code);
 }
+
+module.exports.handledResultsToObservable = (input) => {
+    // If it's already an observable, return as-is
+    if (isObservable(input)) {
+      return input;
+    }
+    
+    // If it's an array, convert to observable stream
+    if (Array.isArray(input)) {
+      return from(input);
+    }
+
+    // Return undefined means handler results in nothing
+    // Need to have an empty resource end point to ensure cached
+    if(typeof input === "undefined") {
+        return of({
+            type: 'EMPTY',
+        })
+    }
+  
+    // If it's an object, convert to an observable
+    return of([input]);
+}

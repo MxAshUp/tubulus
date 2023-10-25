@@ -1,30 +1,8 @@
-const { from, combineLatest, isObservable, of, fromEvent, pipe } = require('rxjs');
+const { from, combineLatest, of, fromEvent, pipe } = require('rxjs');
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
 const db = require('./db');
 const { getMatchingHandlers } = require('./handlers');
-
-const toObservable = (input) => {
-    // If it's already an observable, return as-is
-    if (isObservable(input)) {
-      return input;
-    }
-    
-    // If it's an array, convert to observable stream
-    if (Array.isArray(input)) {
-      return from(input);
-    }
-
-    // Return undefined means handler results in nothing
-    // Need to have an empty resource end point to ensure cached
-    if(typeof input === "undefined") {
-        return of({
-            type: 'EMPTY',
-        })
-    }
-  
-    // If it's an object, convert to an observable
-    return of(input);
-}
+const { handledResultsToObservable } = require('./utilities.js');
 
 module.exports.resourceCrawler = async () => {
 
@@ -73,13 +51,13 @@ module.exports.resourceCrawler = async () => {
             // Maybe the result of this handler already has cached resources
             const cachedResources = await Resource.getHandledCache(resource.id, handler.hash);
             if(cachedResources.length) {
-                return toObservable(cachedResources);
+                return from(cachedResources);
             }
 
             // Handle the resource with handler, get the results
             const handleResults = await handler.handle(resource);
             // Create new resources
-            return toObservable(handleResults).pipe(
+            return handledResultsToObservable(handleResults).pipe(
                 map((newResourceData) => Resource.create(newResourceData, handler, resource))
             );
         }),
