@@ -55,9 +55,9 @@ module.exports.resourceCrawler = async () => {
             }
 
             // Handle the resource with handler, get the results
-            const handleResults = await handler.handle(resource);
+            const results = await handler.transform(resource);
             // Create new resources
-            return handledResultsToObservable(handleResults).pipe(
+            return handledResultsToObservable(results).pipe(
                 map((newResourceData) => Resource.create(newResourceData, handler, resource))
             );
         }),

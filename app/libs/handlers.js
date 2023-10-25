@@ -5,6 +5,7 @@ const { throwFormattedError, hashFunction } = require('./utilities');
 const {
     every,
     typeEquals,
+    bindScope,
 } = require('./criteria');
 const {
     isHtml,
@@ -15,9 +16,9 @@ const {
     pathMatches,
 } = require('./criteria-web');
 
-const urlResolver = {
-    criteria: isUnresolvedUrl,
-    handle: async (resource) => {
+const urlResolveHandler = {
+    scope: isUnresolvedUrl,
+    transform: async (resource) => {
         try {
 
             const {url: finalUrl, headers} = await getFinalUrl(resource.data)
@@ -42,9 +43,9 @@ const urlResolver = {
     }
 };
 
-const url2Html = {
-    criteria: contentTypeOfUrlMatches(/^text\/html\b/i),
-    handle: async (resource) => {
+const url2HtmlHandler = {
+    scope: contentTypeOfUrlMatches(/^text\/html\b/i),
+    transform: async (resource) => {
         const response = await axios.get(resource.data)
             .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
 
@@ -62,15 +63,9 @@ const url2Html = {
     }
 };
 
-// Restricts the conditions of an array of handlers to a specific URL domain 
-const scopeHandlers = (...predicate) => (handlers) => handlers.map(({criteria, ...handlerArgs}) => ({
-    criteria: every(...predicate, criteria),
-    ...handlerArgs,
-}));
+const scopeWikipedia = bindScope(hostEquals('wikipedia.org'));
 
-const scopeWikipedia = scopeHandlers(hostEquals('wikipedia.org'));
-
-const scopeHawthornePages = scopeHandlers(isHtml, hostEquals('hawthornetheatre.com'));
+const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
 
 const html2Object = (type, selectors) => (resource) => {
     const $ = cheerio.load(resource.data);
@@ -99,31 +94,32 @@ const html2Value = (type, selector) => (resource) => {
 const handlers = module.exports.handlers = [
 
     // Generic url and content-type resolver
-    urlResolver,
+    urlResolveHandler,
 
     // Generic HTML getter
-    url2Html,
+    url2HtmlHandler,
 
     ...scopeWikipedia([
         {
-            criteria: isHtml,
-            handle: html2Object('json', {
+            transform: html2Object('json', {
                 title: ($) =>   $('title').text().trim(),
                 image: ($) =>   $('meta[property="og:image"]').attr('content'),
                 content: ($) => $('#mw-content-text').text().trim().slice(0,100),
             })
         },
         {
-            criteria: isHtml,
-            handle: html2Value('url', $ => $('meta[property="og:image"]').attr('content')),
+            transform: html2Value('url', $ => $('meta[property="og:image"]').attr('content')),
+        },
+        {
+            transform: (r) => {console.log(r)}
         },
     ]),
 
     ...scopeHawthornePages([
         {
             // Events page
-            criteria: pathMatches(/^\/events\/$/i),
-            handle: (resource) => {
+            scope: pathMatches(/^\/events\/$/i),
+            transform: (resource) => {
                 const $ = cheerio.load(resource.data);
     
                 const eventPageUrls = $('a#eventTitle').map((i, el) => $(el).attr('href')).get();
@@ -136,8 +132,8 @@ const handlers = module.exports.handlers = [
         },
         {
             // Hawthorn events: event parser
-            criteria: pathMatches(/^\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i),
-            handle: html2Object('event', {
+            scope: pathMatches(/^\/event\/([^\/]+)\/([^\/]+)\/([^\/]+)\//i),
+            transform: html2Object('event', {
                 title: $ =>       $('#eventTitle').text().trim(),
                 tagLine: $ =>     $('.eventTagLine').text().trim(),
                 presentedBy: $ => $('.eventTagLine').text().trim().match(/^(?<host>.+)\s+presents:/i)?.groups?.host,
@@ -156,8 +152,8 @@ const handlers = module.exports.handlers = [
 
     // Etix: Event Parser
     {
-        criteria: urlOfPageMatches(/^https:\/\/event\.etix\.com\/ticket\/online\//i),
-        handle: (resource) => {
+        scope: urlOfPageMatches(/^https:\/\/event\.etix\.com\/ticket\/online\//i),
+        transform: (resource) => {
             const $ = cheerio.load(resource.data);
             return {
                 type: 'event',
@@ -174,8 +170,8 @@ const handlers = module.exports.handlers = [
 
     // Event parser, image getter
     {
-        criteria: every(typeEquals('event'), (resource) => resource.data?.imageUrl),
-        handle: (resource) => ({
+        scope: every(typeEquals('event'), (resource) => resource.data?.imageUrl),
+        transform: (resource) => ({
             type: 'url',
             data: resource.data?.imageUrl,
         })
@@ -183,8 +179,8 @@ const handlers = module.exports.handlers = [
 
     // Generic image downloader
     {
-        criteria: contentTypeOfUrlMatches(/^image\/(jpeg|png)\b/i),
-        handle: async (resource) => {
+        scope: contentTypeOfUrlMatches(/^image\/(jpeg|png)\b/i),
+        transform: async (resource) => {
 
             const {data: imageData, headers} = await axios.get(resource.data, {responseType: 'arraybuffer'})
                     .catch(throwFormattedError(`Failed to download image: ${resource.data}`));
@@ -202,8 +198,8 @@ const handlers = module.exports.handlers = [
 
     // Event parser, ticket url getter
     {
-        criteria: every(typeEquals('event'), (resource) => resource.data?.ticketUrl),
-        handle: async (resource) => {
+        scope: every(typeEquals('event'), (resource) => resource.data?.ticketUrl),
+        transform: async (resource) => {
             return {
                 type: 'url',
                 meta: {
@@ -215,9 +211,9 @@ const handlers = module.exports.handlers = [
     }
 ].map((handler) => ({
     ...handler,
-    hash: hashFunction(handler.handle)
+    hash: hashFunction(handler.transform)
 }));
 
 module.exports.getMatchingHandlers = (resource) => {
-    return handlers.filter(({criteria}) => criteria(resource));
+    return handlers.filter(({scope}) => scope(resource));
 };
