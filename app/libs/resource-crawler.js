@@ -1,18 +1,18 @@
 const { from, combineLatest, of, fromEvent, pipe } = require('rxjs');
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
-const db = require('./db');
 const { handledResultsToObservable } = require('./utilities.js');
 
 module.exports.resourceCrawler = async (options = {}) => {
     const {
         getHandlers = throwIfMissing`getHandlers`,
+        db = throwIfMissing`db`,
     } = options;
-
+    
     const {
         Resource,
         resourceEvents,
         fromResourceFind
-    } = await db.setup();
+    } = db;
 
     // Some possible observables to use
     const topResources$ =               fromResourceFind({ depth: 0 });

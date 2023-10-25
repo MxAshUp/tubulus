@@ -2,15 +2,20 @@ const fs = require('fs');
 const { resourceCrawler } = require ('./libs/resource-crawler');
 const { mergeMap } = require('rxjs');
 const { getHandlers } = require('./libs/handlers');
+const { setup } = require('./libs/db');
 
 // This app crawls random wikipedia page and downloads images to /exports
 
 (async () => {
+
+    const db = await setup();
+
     const {
         theMainCrawler$,
         Resource,
     } = await resourceCrawler({
         getHandlers,
+        db,
     });
 
     // Seeder
