@@ -1,105 +1,22 @@
-const axios = require('axios');
-const { getFinalUrl } = require('./libs/get-final-url');
 const cheerio = require('cheerio');
-const { throwFormattedError } = require('./libs/utilities');
-const {
-    every,
-    typeEquals,
-    bindScope,
-    some,
-} = require('./libs/scope-utilities');
-const {
-    isHtml,
-    hostEquals,
-    hostMatches,
-    urlOfPageMatches,
-    isUnresolvedUrl,
-    contentTypeOfUrlMatches,
-    pathMatches,
-} = require('./libs/scope-web');
 
-const urlResolveHandler = {
-    scope: isUnresolvedUrl,
-    transform: async (resource) => {
-        try {
+const { every, typeEquals, bindScope } = require('./libs/scope-utilities');
+const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = require('./libs/scope-web');
 
-            const {url: finalUrl, headers} = await getFinalUrl(resource.data)
-                .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
-
-            // Create and return a new resource
-            return {
-                type: 'url',
-                meta: {
-                    ...(resource.meta ? resource.meta : {}),
-                    resolved: true,
-                    contentType: headers['content-type'],
-                },
-                data: finalUrl
-            };
-        } catch (e) {
-            // TODO - improve error handling
-            if(/404/.test(e.message)) {
-                return;
-            }
-        }
-    }
-};
-
-const url2HtmlHandler = {
-    scope: contentTypeOfUrlMatches(/^text\/html\b/i),
-    transform: async (resource) => {
-        const response = await axios.get(resource.data)
-            .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
-
-        // Create and return a new resource
-        return {
-            type: 'html',
-            meta: {
-                ...(resource.meta ? resource.meta : {}),
-                url: resource.data,
-                status: response.status,
-                contentType: response.headers['content-type'],
-            },
-            data: response.data
-        };
-    }
-};
+const { urlResolveHandler, url2HtmlHandler, url2ImageHandler } = require('./libs/web/handlers');
+const { html2Value, html2Object } = require('./libs/web/transformers');
 
 const scopeWikipedia = bindScope(isHtml, hostMatches(/\bwikipedia.org$/));
-
 const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
-
-const html2Object = (type, selectors) => (resource) => {
-    const $ = cheerio.load(resource.data);
-    const jsonData = Object.fromEntries(Object.entries(selectors).map(([key, selector]) => [key, selector($)]));
-    return {
-        type,
-        meta: {
-            url: resource.meta.url,
-        },
-        data: jsonData,
-    };
-};
-
-const html2Value = (type, selector) => (resource) => {
-    const $ = cheerio.load(resource.data);
-    const data = selector($);
-    return {
-        type,
-        meta: {
-            url: resource.meta.url,
-        },
-        data,
-    };
-};
 
 module.exports.handlers = [
 
-    // Generic url and content-type resolver
+    // urlResolveHandler,
+    // url2HtmlHandler,
+    // url2ImageHandler,
     urlResolveHandler,
-
-    // Generic HTML getter
     url2HtmlHandler,
+    url2ImageHandler,
 
     ...scopeWikipedia([
         {
@@ -174,25 +91,6 @@ module.exports.handlers = [
             type: 'url',
             data: resource.data?.imageUrl,
         })
-    },
-
-    // Generic image downloader
-    {
-        scope: contentTypeOfUrlMatches(/^image\/(jpeg|png)\b/i),
-        transform: async (resource) => {
-
-            const {data: imageData, headers} = await axios.get(resource.data, {responseType: 'arraybuffer'})
-                    .catch(throwFormattedError(`Failed to download image: ${resource.data}`));
-
-            return {
-                type: 'image',
-                meta: {
-                    url: resource.data,
-                    contentType: headers['content-type'],
-                },
-                data: imageData,
-            };
-        }
     },
 
     // Event parser, ticket url getter
