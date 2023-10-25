@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const EventEmitter = require('events');
 const { defer, from } = require('rxjs');
 const { mergeAll } = require('rxjs/operators');
-const { hashString } = require('./hash');
+const { hashString } = require('./utilities');
 
 function addHashToSchema(schema) {
 
