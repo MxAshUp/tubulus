@@ -56,3 +56,5 @@ module.exports.handledResultsToObservable = (input) => {
     // If it's an object, convert to an observable
     return of(input);
 }
+
+module.exports.invokeWithArgs = (...args) => (fn) => fn(...args);
