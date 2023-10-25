@@ -109,6 +109,7 @@ const handlers = module.exports.handlers = [
             })
         },
         {
+            dontCache: true,
             transform: html2Value('url', $ => $('meta[property="og:image"]').attr('content')),
         },
     ]),

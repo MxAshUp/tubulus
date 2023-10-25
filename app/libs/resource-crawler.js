@@ -49,9 +49,11 @@ module.exports.resourceCrawler = async () => {
         mergeMap(async ([resource, handler]) => {
 
             // Maybe the result of this handler already has cached resources
-            const cachedResources = await Resource.getHandledCache(resource.id, handler.hash);
-            if(cachedResources.length) {
-                return from(cachedResources);
+            if(!handler?.dontCache) {
+                const cachedResources = await Resource.getHandledCache(resource.id, handler.hash);
+                if(cachedResources.length) {
+                    return from(cachedResources);
+                }
             }
 
             // Handle the resource with handler, get the results
