@@ -8,8 +8,8 @@ const some                   = (...predicates) => (resource) => predicates.some(
 const every                  = (...predicates) => (resource) => predicates.every(invokeWithArgs(resource));
 
 // "Binds" heach handler to all predicates
-const bindScope = (...predicate) => (handlers) => handlers.map(({scope, ...handlerArgs}) => ({
-    scope: scope ? every(...predicate, scope) : every(...predicate),
+const bindScope = (...predicates) => (handlers) => handlers.map(({scope, ...handlerArgs}) => ({
+    scope: scope ? every(...predicates, scope) : every(...predicates),
     ...handlerArgs,
 }));
 
