@@ -11,9 +11,6 @@ const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com')
 
 module.exports.handlers = [
 
-    // urlResolveHandler,
-    // url2HtmlHandler,
-    // url2ImageHandler,
     urlResolveHandler,
     url2HtmlHandler,
     url2ImageHandler,
