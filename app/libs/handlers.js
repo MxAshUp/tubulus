@@ -11,6 +11,7 @@ const {
 const {
     isHtml,
     hostEquals,
+    hostMatches,
     urlOfPageMatches,
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
@@ -64,7 +65,7 @@ const url2HtmlHandler = {
     }
 };
 
-const scopeWikipedia = bindScope(isHtml, some(hostEquals('wikipedia.org'), hostEquals('en.wikipedia.org')));
+const scopeWikipedia = bindScope(isHtml, hostMatches(/\bwikipedia.org$/));
 
 const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
 

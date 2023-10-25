@@ -10,6 +10,7 @@ const isUrl                  = typeEquals('url');
 
 // Url utilities
 const urlHasHost     = (url, host)        => new URL(url).host === host;
+const urlMatchesHost = (url, hostPattern) => hostPattern.test(new URL(url).host);
 const urlMatchesPath = (url, pathPattern) => pathPattern.test(new URL(url).pathname);
 
 // Calls a function on the url of a resource 
@@ -23,6 +24,7 @@ const testByUrl = (predicate) => (resource) => {
 
 // Url conditions
 const pathMatches    = (pathPattern) => testByUrl((url) => urlMatchesPath(url, pathPattern));
+const hostMatches    = (hostPattern) => testByUrl((url) => urlMatchesHost(url, hostPattern));
 const hostEquals     = (host)        => testByUrl((url) => urlHasHost(url, host));
 const metaUrlMatches = (urlPattern)  => testByUrl((url) => urlPattern.test(url));
 
@@ -41,6 +43,7 @@ module.exports = {
     testByUrl,
     hostEquals,
     pathMatches,
+    hostMatches,
     isHtml,
     isUrl,
     metaUrlMatches,
