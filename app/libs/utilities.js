@@ -8,6 +8,16 @@ module.exports.throwFormattedError = (errorMessage) => (error) => {
     throw formattedError;
 }
 
+module.exports.throwIfMissing = (parameterName) => {
+    const newError = new Error(`Missing: ${parameterName}`);
+  
+    const stack = newError.stack.split("\n");
+    stack.splice(1, 1);
+    newError.stack = stack.join("\n");
+  
+    throw newError;
+  }
+
 const hashString = module.exports.hashString = (algorithm, data) => {
     return crypto
         .createHash(algorithm)

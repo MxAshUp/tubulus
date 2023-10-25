@@ -1,10 +1,12 @@
 const { from, combineLatest, of, fromEvent, pipe } = require('rxjs');
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
 const db = require('./db');
-const { getMatchingHandlers } = require('./handlers');
 const { handledResultsToObservable } = require('./utilities.js');
 
-module.exports.resourceCrawler = async () => {
+module.exports.resourceCrawler = async (options = {}) => {
+    const {
+        getMatchingHandlers = throwIfMissing`getMatchingHandlers`,
+    } = options;
 
     const {
         Resource,
