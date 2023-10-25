@@ -38,6 +38,9 @@ const isResolvedUrl           = every(isUrl, (resource) => resource.meta?.resolv
 const contentTypeOfUrlMatches = (contentTypePattern) => every(isResolvedUrl, metaContentTypeMatches(contentTypePattern));
 
 module.exports = {
+    urlHasHost,
+    urlMatchesPath,
+    testByUrl,
     typeEquals,
     some,
     every,
