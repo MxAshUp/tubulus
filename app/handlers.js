@@ -11,7 +11,7 @@ const {
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
     pathMatches,
-} = require('./handlers-criteria');
+} = require('./criteria');
 
 const urlResolver = {
     criteria: isUnresolvedUrl,

@@ -1,5 +1,5 @@
 const test = require('tape');
-const { typeEquals, isEvent, isHtml, isUrl, every, some, urlHasHost, urlMatchesPath, testByUrl, metaContentTypeMatches } = require('../handlers-criteria'); // Replace with your actual file path
+const { typeEquals, isEvent, isHtml, isUrl, every, some, urlHasHost, urlMatchesPath, testByUrl, metaContentTypeMatches } = require('../criteria'); // Replace with your actual file path
 
 test('typeEquals()', (t) => {
     t.plan(3);
