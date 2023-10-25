@@ -1,33 +1,29 @@
 const fs = require('fs');
-const { resourceCrawler } = require('./resource-crawler');
+const { resourceCrawler } = require ('./libs/resource-crawler');
+const { mergeMap } = require('rxjs');
 
 // This app crawls random wikipedia page and downloads images to /exports
 
 (async () => {
     const {
         theMainCrawler$,
-        topResources$,
-        unhandledResources$,
-        unhandledTopLevelResources$,
-        orphanedResources$,
         Resource,
     } = await resourceCrawler();
 
     // Seeder
-    // console.log("INITIAL:", (await Resource.find({})));
-    // await Resource.deleteMany({});
-    console.log("INITIAL:", (await Resource.find({})).length);
-    // setInterval(async () => {
-    //     console.log("INSERT YO>....");
-    //     new Resource({
-    //         type: 'url',
-    //         data: 'https://en.wikipedia.org/wiki/Special:Random',
-    //     }).save();
-    // }, 3000);
+    console.log("INITIAL:", (await Resource.count({})));
+    
+    new Resource({
+        type: 'url',
+        data: 'https://hawthornetheatre.com/events/',
+    }).save();
 
-    theMainCrawler$.subscribe((res) => {
+
+    await theMainCrawler$.pipe(mergeMap(async (res) => {
+        // Custom exporting of data
         if(res.type === 'image') {
-            const fnName = res.meta.url.match(/\/([^\/]+\.[a-z]+)$/i)?.[1];
+            const {fPart = 'untitled', ext = ''} = res.meta.url.match(/\/(?<fPart>[^\/]+)\.(?<ext>[a-z]+)$/i)?.groups || {};
+            const fnName = `${fPart}_${res.hash.slice(0,5)}.${ext}`;
             const fPath = `${__dirname}/exports/${fnName}`;
             if(!res.isFromCache() || !fs.existsSync(fPath)) {
                 if(res.data instanceof Uint8Array) {
@@ -37,6 +33,14 @@ const { resourceCrawler } = require('./resource-crawler');
                 }
             }
         }
-    }, console.log, console.log.bind(null, "DONE DONE"));
+        if(res.type === 'event') {
+            console.log(res);
+        }
+        if(res.type === 'url' && res.meta?.resolved) {
+            // console.log(res.data, res.meta?.contentType);
+        }
+    })).toPromise();
+    
+    console.log("COMPLETE DONE");
 
-})();
+})().then(process.exit);
