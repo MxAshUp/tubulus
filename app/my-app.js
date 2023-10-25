@@ -1,20 +1,23 @@
 const fs = require('fs');
 const { resourceCrawler } = require ('./libs/resource-crawler');
 const { mergeMap } = require('rxjs');
-const { getHandlers } = require('./libs/handlers');
+const { handlers } = require('./libs/handlers');
 const { setup } = require('./libs/db');
+const HandlerRegistry = require('./libs/handler-registry');
 
 // This app crawls random wikipedia page and downloads images to /exports
 
 (async () => {
 
     const db = await setup();
+    const handlersRegistry = HandlerRegistry();
+    handlersRegistry.registerHandlers(handlers)
 
     const {
         theMainCrawler$,
         Resource,
-    } = await resourceCrawler({
-        getHandlers,
+    } = resourceCrawler({
+        getHandlers: handlersRegistry.getHandlers,
         db,
     });
 

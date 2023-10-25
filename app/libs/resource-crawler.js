@@ -2,7 +2,7 @@ const { from, combineLatest, of, fromEvent, pipe } = require('rxjs');
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
 const { handledResultsToObservable } = require('./utilities.js');
 
-module.exports.resourceCrawler = async (options = {}) => {
+module.exports.resourceCrawler = (options = {}) => {
     const {
         getHandlers = throwIfMissing`getHandlers`,
         db = throwIfMissing`db`,

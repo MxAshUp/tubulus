@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { getFinalUrl } = require('./get-final-url');
 const cheerio = require('cheerio');
-const { throwFormattedError, hashFunction } = require('./utilities');
+const { throwFormattedError } = require('./utilities');
 const {
     every,
     typeEquals,
@@ -93,7 +93,7 @@ const html2Value = (type, selector) => (resource) => {
     };
 };
 
-const handlers = module.exports.handlers = [
+module.exports.handlers = [
 
     // Generic url and content-type resolver
     urlResolveHandler,
@@ -208,11 +208,4 @@ const handlers = module.exports.handlers = [
             };
         }
     }
-].map((handler) => ({
-    ...handler,
-    hash: hashFunction(handler.transform)
-}));
-
-module.exports.getHandlers = (resource) => {
-    return handlers.filter(({scope}) => scope(resource));
-};
+];
