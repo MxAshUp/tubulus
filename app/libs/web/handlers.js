@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { getFinalUrl } = require('../get-final-url');
+const { getFinalUrl } = require('./get-final-url');
 const { throwFormattedError } = require('../utilities');
 const { isUnresolvedUrl, contentTypeOfUrlMatches } = require('./scopes');
 
