@@ -1,13 +1,13 @@
 const axios = require('axios');
-const { getFinalUrl } = require('./get-final-url');
+const { getFinalUrl } = require('./libs/get-final-url');
 const cheerio = require('cheerio');
-const { throwFormattedError } = require('./utilities');
+const { throwFormattedError } = require('./libs/utilities');
 const {
     every,
     typeEquals,
     bindScope,
     some,
-} = require('./scope-utilities');
+} = require('./libs/scope-utilities');
 const {
     isHtml,
     hostEquals,
@@ -16,7 +16,7 @@ const {
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
     pathMatches,
-} = require('./scope-web');
+} = require('./libs/scope-web');
 
 const urlResolveHandler = {
     scope: isUnresolvedUrl,

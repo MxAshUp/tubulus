@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { resourceCrawler } = require ('./libs/resource-crawler');
 const { mergeMap } = require('rxjs');
-const { handlers } = require('./libs/handlers');
+const { handlers } = require('./handlers-web');
 const { setup } = require('./libs/db');
 const HandlerRegistry = require('./libs/handler-registry');
 
