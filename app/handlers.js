@@ -1,8 +1,7 @@
 const axios = require('axios');
 const { getFinalUrl } = require('./get-final-url');
-const { hashFunction } = require('./hash');
 const cheerio = require('cheerio');
-const { throwFormattedError } = require('./utilities');
+const { throwFormattedError, hashFunction } = require('./utilities');
 const {
     every,
     isEvent,
@@ -70,6 +69,17 @@ const scopeHandlers = (...predicate) => (handlers) => handlers.map(({criteria, .
 const scopeWikipedia = scopeHandlers(hostEquals('wikipedia.org'));
 
 const scopeHawthornePages = scopeHandlers(isHtml, hostEquals('hawthornetheatre.com'));
+
+// const workflow = (handlers) => handlers.map((handler, i, handlers) => {
+//     handler.uniqueSymbolIdentifier = new Symbol();
+//     if(i > 0) {
+//         const previousHandler = handlers[i-1];
+//         // parent hash check
+//         // parent uniqueSymbolIdentifier check
+//         handler.criteria = every(fromHandler(/*.previousHandler.*/), handler.criteria);
+//     }
+//     return handler;
+// }, []);
 
 const html2Object = (type, selectors) => (resource) => {
     const $ = cheerio.load(resource.data);
