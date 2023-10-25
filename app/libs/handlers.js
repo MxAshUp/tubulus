@@ -214,6 +214,6 @@ const handlers = module.exports.handlers = [
     hash: hashFunction(handler.transform)
 }));
 
-module.exports.getMatchingHandlers = (resource) => {
+module.exports.getHandlers = (resource) => {
     return handlers.filter(({scope}) => scope(resource));
 };

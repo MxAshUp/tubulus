@@ -5,7 +5,7 @@ const { handledResultsToObservable } = require('./utilities.js');
 
 module.exports.resourceCrawler = async (options = {}) => {
     const {
-        getMatchingHandlers = throwIfMissing`getMatchingHandlers`,
+        getHandlers = throwIfMissing`getHandlers`,
     } = options;
 
     const {
@@ -36,7 +36,7 @@ module.exports.resourceCrawler = async (options = {}) => {
         // Also marks resource as handled
         // If no matching handlers
         mergeMap((resource) => {
-            const handlers = getMatchingHandlers(resource);
+            const handlers = getHandlers(resource);
             
             // @TODO - should be await
             resource.setHandled(handlers);
