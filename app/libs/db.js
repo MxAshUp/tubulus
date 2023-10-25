@@ -44,6 +44,14 @@ function eventifySchema(schema) {
     return events;
 }
 
+const requiredNonEmptyStringType = {
+    type: String,
+    required: true,
+    validate: {
+        validator: Boolean,
+    }
+};
+
 module.exports.setup = async function setup(options = {}) {
     const {
         mongoUrl = 'mongodb://localhost:27017/dance-pdx',
@@ -57,7 +65,7 @@ module.exports.setup = async function setup(options = {}) {
     
     // Define the Resource schema
     const resourceSchema = new mongoose.Schema({
-        type: String,
+        type: requiredNonEmptyStringType,
         meta: Object,
         data: mongoose.Schema.Types.Mixed,
 
