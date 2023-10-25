@@ -4,14 +4,16 @@ const cheerio = require('cheerio');
 const { throwFormattedError, hashFunction } = require('./utilities');
 const {
     every,
-    isEvent,
+    typeEquals,
+} = require('./criteria');
+const {
     isHtml,
     hostEquals,
     urlOfPageMatches,
     isUnresolvedUrl,
     contentTypeOfUrlMatches,
     pathMatches,
-} = require('./criteria');
+} = require('./criteria-web');
 
 const urlResolver = {
     criteria: isUnresolvedUrl,
@@ -183,7 +185,7 @@ const handlers = module.exports.handlers = [
 
     // Event parser, image getter
     {
-        criteria: every(isEvent, (resource) => resource.data?.imageUrl),
+        criteria: every(typeEquals('event'), (resource) => resource.data?.imageUrl),
         handle: (resource) => ({
             type: 'url',
             data: resource.data?.imageUrl,
@@ -211,7 +213,7 @@ const handlers = module.exports.handlers = [
 
     // Event parser, ticket url getter
     {
-        criteria: every(isEvent, (resource) => resource.data?.ticketUrl),
+        criteria: every(typeEquals('event'), (resource) => resource.data?.ticketUrl),
         handle: async (resource) => {
             return {
                 type: 'url',

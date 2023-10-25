@@ -1,5 +1,6 @@
 const test = require('tape');
-const { typeEquals, isEvent, isHtml, isUrl, every, some, urlHasHost, urlMatchesPath, testByUrl, metaContentTypeMatches } = require('../criteria'); // Replace with your actual file path
+const { typeEquals, every, some } = require('../criteria'); // Replace with your actual file path
+const { isHtml, isUrl, urlHasHost, urlMatchesPath, testByUrl, metaContentTypeMatches } = require('../criteria-web'); // Replace with your actual file path
 
 test('typeEquals()', (t) => {
     t.plan(3);
@@ -8,13 +9,6 @@ test('typeEquals()', (t) => {
     t.ok(isMyType({ type: 'myType' }), 'Should return true for matching type');
     t.notOk(isMyType({ type: 'notMyType' }), 'Should return false for non-matching type');
     t.notOk(isMyType({}), 'Should return false for missing type');
-});
-
-test('isEvent()', (t) => {
-    t.plan(2);
-    
-    t.ok(isEvent({ type: 'event' }), 'Should return true for type "event"');
-    t.notOk(isEvent({ type: 'html' }), 'Should return false for non-"event" type');
 });
 
 test('isHtml()', (t) => {
