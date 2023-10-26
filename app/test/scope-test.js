@@ -51,6 +51,23 @@ test('some()', (t) => {
     t.notOk(isPositive(-5), 'Should return false when the single predicate fails');
 });
 
+test('concatConditions - nested', (t) => {
+    const isEven = x => x % 2 === 0;
+    const isPositive = x => x > 0;
+    const isGreaterThan10 = x => x > 10;
+
+    const complexCondition = every(
+        isEven,
+        some(isPositive, isGreaterThan10),
+        every(isGreaterThan10, isPositive)
+    );
+
+    t.true(complexCondition(12), 'Should return true for 12');
+    t.false(complexCondition(2), 'Should return false for 2');
+    t.false(complexCondition(-12), 'Should return false for -12');
+    t.end();
+});
+
 test('urlHasHost function', (t) => {
     t.plan(4);
     
