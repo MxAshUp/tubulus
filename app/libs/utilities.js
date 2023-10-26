@@ -71,6 +71,8 @@ module.exports.invokeWithArgs = (...args) => (fn) => fn(...args);
 
 // Dynamically composes an optimized function based on an array of predicates and a separator (' && ', ' || ', etc).
 module.exports.concatConditions = (conditions, separator) => {
+    if(conditions.length === 1) return conditions[0];
+
     const flattenConditions = [];
 
     const flatten = (conds, sep) => conds.map(c => {

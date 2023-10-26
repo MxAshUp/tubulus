@@ -52,6 +52,8 @@ test('some()', (t) => {
 });
 
 test('concatConditions - nested', (t) => {
+    t.plan(3);
+
     const isEven = x => x % 2 === 0;
     const isPositive = x => x > 0;
     const isGreaterThan10 = x => x > 10;
@@ -65,6 +67,16 @@ test('concatConditions - nested', (t) => {
     t.true(complexCondition(12), 'Should return true for 12');
     t.false(complexCondition(2), 'Should return false for 2');
     t.false(complexCondition(-12), 'Should return false for -12');
+    t.end();
+});
+
+test('concatConditions - single optimized', (t) => {
+    t.plan(3);
+    const isEven = every(x => x % 2 === 0);
+
+    t.true(isEven(12), 'Should return true for 12');
+    t.false(isEven(3), 'Should return false for 2');
+    t.false(isEven(1), 'Should return false for -12');
     t.end();
 });
 
