@@ -69,8 +69,7 @@ module.exports.handledResultsToObservable = (input) => {
 
 module.exports.invokeWithArgs = (...args) => (fn) => fn(...args);
 
-// Dynamically generates an optimized function based on an array of predicates and a separator (' && ', ' || ', etc).
-// This is for optimizing composable functions
+// Dynamically composes an optimized function based on an array of predicates and a separator (' && ', ' || ', etc).
 module.exports.concatConditions = (conditions, separator) => {
     const flattenConditions = [];
 
