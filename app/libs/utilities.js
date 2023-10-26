@@ -68,3 +68,35 @@ module.exports.handledResultsToObservable = (input) => {
 }
 
 module.exports.invokeWithArgs = (...args) => (fn) => fn(...args);
+
+// Dynamically generates an optimized function based on an array of predicates and a separator (' && ', ' || ', etc).
+// This is for optimizing composable functions
+module.exports.concatConditions = (conditions, separator) => {
+    const flattenConditions = [];
+
+    const flatten = (conds, sep) => conds.map(c => {
+        if (c._concatSep && c._concatConditions) {
+            const innerSep = c._concatSep;
+            const innerPredicate = flatten(c._concatConditions, innerSep);
+            flattenConditions.push(...c._concatConditions);
+            return innerSep !== sep ? `(${innerPredicate})` : innerPredicate;
+        } else {
+            flattenConditions.push(c);
+            return `_${flattenConditions.length - 1}(...args)`;
+        }
+    }).join(sep);
+
+    const predicateCallStr = flatten(conditions, separator);
+    const fullFnStr = `return ${predicateCallStr};`;
+
+    const fn = new Function(
+        ...Array.from({ length: flattenConditions.length }, (_, i) => `_${i}`),
+        '...args', 
+        fullFnStr
+    ).bind(null, ...flattenConditions);
+
+    fn._concatSep = separator;
+    fn._concatConditions = conditions;
+
+    return fn;
+};
