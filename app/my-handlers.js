@@ -6,16 +6,16 @@ const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = requi
 const { urlResolveHandler, url2HtmlHandler, url2ImageHandler } = require('./libs/web/handlers');
 const { html2Value, html2Object } = require('./libs/web/transformers');
 
-const scopeWikipedia = bindScope(isHtml, hostMatches(/\bwikipedia.org$/));
+const scopeWikipedia = bindScope(hostMatches(/\bwikipedia.org$/));
 const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
 
 module.exports = [
 
-    urlResolveHandler,
-    url2HtmlHandler,
-    url2ImageHandler,
-
     ...sequence([
+        ...scopeWikipedia([
+            urlResolveHandler,
+        ]),
+        url2HtmlHandler,
         {
             scope: every(isHtml, hostMatches(/\bwikipedia.org$/)),
             transform: html2Object('json', {
@@ -30,6 +30,14 @@ module.exports = [
                 type: 'url',
                 data: resource.data?.image,
             })
+        },
+        urlResolveHandler,
+        url2ImageHandler,
+        {
+            scope: typeEquals('image'),
+            transform: () => {
+                // nothing
+            }
         }
     ]),
 
