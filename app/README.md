@@ -16,3 +16,5 @@ improve meta merging for sub resources
 need to write test for sequence, make sure each one can reference the previous
 
 error handling wrap for scope
+
+Should resources mid-sequence be able to be handled by out-of-sequence handlers (like even the first step in the sequence?)
