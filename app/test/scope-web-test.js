@@ -1,15 +1,5 @@
 const test = require('tape');
-const { typeEquals, every, some } = require('../libs/scope-utilities'); // Replace with your actual file path
 const { isHtml, isUrl, urlHasHost, urlMatchesPath, testByUrl, metaContentTypeMatches } = require('../libs/web/scopes'); // Replace with your actual file path
-
-test('typeEquals()', (t) => {
-    t.plan(3);
-    
-    const isMyType = typeEquals('myType');
-    t.ok(isMyType({ type: 'myType' }), 'Should return true for matching type');
-    t.notOk(isMyType({ type: 'notMyType' }), 'Should return false for non-matching type');
-    t.notOk(isMyType({}), 'Should return false for missing type');
-});
 
 test('isHtml()', (t) => {
     t.plan(2);
@@ -23,61 +13,6 @@ test('isUrl()', (t) => {
     
     t.ok(isUrl({ type: 'url' }), 'Should return true for type "url"');
     t.notOk(isUrl({ type: 'html' }), 'Should return false for non-"url" type');
-});
-
-test('every()', (t) => {
-    t.plan(5);
-    
-    const allPositive = every(x => x > 0, x => x !== 0);
-    t.ok(allPositive(5), 'Should return true when all predicates pass');
-    t.notOk(allPositive(-5), 'Should return false when any predicate fails');
-    t.notOk(allPositive(0), 'Should return false when any predicate fails');
-    
-    const isPositive = every(x => x > 0);
-    t.ok(isPositive(5), 'Should return true when the single predicate passes');
-    t.notOk(isPositive(-5), 'Should return false when the single predicate fails');
-});
-
-test('some()', (t) => {
-    t.plan(5);
-    
-    const anyPositive = some(x => x > 0, x => x < 0);
-    t.ok(anyPositive(5), 'Should return true when any predicate passes');
-    t.ok(anyPositive(-5), 'Should return true when any predicate passes');
-    t.notOk(anyPositive(0), 'Should return false when all predicates fail');
-    
-    const isPositive = some(x => x > 0);
-    t.ok(isPositive(5), 'Should return true when the single predicate passes');
-    t.notOk(isPositive(-5), 'Should return false when the single predicate fails');
-});
-
-test('concatConditions - nested', (t) => {
-    t.plan(3);
-
-    const isEven = x => x % 2 === 0;
-    const isPositive = x => x > 0;
-    const isGreaterThan10 = x => x > 10;
-
-    const complexCondition = every(
-        isEven,
-        some(isPositive, isGreaterThan10),
-        every(isGreaterThan10, isPositive)
-    );
-
-    t.true(complexCondition(12), 'Should return true for 12');
-    t.false(complexCondition(2), 'Should return false for 2');
-    t.false(complexCondition(-12), 'Should return false for -12');
-    t.end();
-});
-
-test('concatConditions - single optimized', (t) => {
-    t.plan(3);
-    const isEven = every(x => x % 2 === 0);
-
-    t.true(isEven(12), 'Should return true for 12');
-    t.false(isEven(3), 'Should return false for 2');
-    t.false(isEven(1), 'Should return false for -12');
-    t.end();
 });
 
 test('urlHasHost function', (t) => {
