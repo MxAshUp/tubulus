@@ -21,10 +21,10 @@ const sequence = (handlers) => handlers.reduce((handlers, handler, index) => {
         handlers.push(handler);
     } else {
         // All other handlers are modified to only respond to the previous handler resource
-        const fromHandlerScope = fromHandler(handlers[index - 1]);
+        const fromHandlerScope = fromHandler(handlers[handlers.length - 1]);
         handlers.push({
             ...handler,
-            scope: handler.scope ? every(fromHandler(handlers[index - 1]), handler.scope) : fromHandlerScope,
+            scope: handler.scope ? every(fromHandlerScope, handler.scope) : fromHandlerScope,
         });
     }
     return handlers;
