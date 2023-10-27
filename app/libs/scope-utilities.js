@@ -15,19 +15,20 @@ const bindScope = (...predicates) => (handlers) => handlers.map(({scope, ...hand
 
 const fromHandler = (handler) => (resource) => equalAndDefined(resource.$locals.handlerId, handler.id);
 
-const sequence = (handlers) => handlers.map((handler, index, handlers) => {
+const sequence = (handlers) => handlers.reduce((handlers, handler, index) => {
     if(index === 0) {
         // The first handler scope is untouched
-        return handler;
+        handlers.push(handler);
     } else {
         // All other handlers are modified to only respond to the previous handler resource
         const fromHandlerScope = fromHandler(handlers[index - 1]);
-        return {
+        handlers.push({
             ...handler,
             scope: handler.scope ? every(fromHandler(handlers[index - 1]), handler.scope) : fromHandlerScope,
-        }
+        });
     }
-})
+    return handlers;
+}, []);
 
 module.exports = {
     typeEquals,
