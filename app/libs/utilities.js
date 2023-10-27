@@ -67,6 +67,9 @@ module.exports.handledResultsToObservable = (input) => {
     return of(input);
 }
 
+// Returns true if a and b are equal, but will return false if either a or b are undefined;
+module.exports.equalAndDefined = (a, b) => typeof a !== 'undefined' && a === b;
+
 module.exports.invokeWithArgs = (...args) => (fn) => fn(...args);
 
 // Dynamically composes an optimized function based on an array of predicates and a separator (' && ', ' || ', etc).
