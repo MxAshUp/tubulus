@@ -105,24 +105,30 @@ module.exports.setup = async function setup(options = {}) {
             }
         },
         statics: {
-            getHandledCache: async function(parentResourceId, parentHandlerHash) {
+            getHandledCache: async function(parentHandler, parentResource) {
+                const parentResourceId = parentResource.id;
+                const parentHandlerHash = parentHandler.hash;
                 // Maybe the result of this handler already has cached resources
                 const cachedResources = await Resource.find({parentResource: parentResourceId, parentHandlerHash: parentHandlerHash});
                 return cachedResources.map((res) => {
                     res.$locals.fromCache = true;
                     res.handled = false;
                     res.orphaned = false;
+                    res.$locals.handlerId = parentHandler.id;
                     return res;
                 });
             },
             create: function(newResourceData, parentHandler, parentResource) {
-
-                return new Resource({
+                const resource = new Resource({
                     ...newResourceData,
                     parentHandlerHash: parentHandler.hash,
                     parentResource: parentResource._id,
                     depth: parentResource.depth + 1,
                 });
+
+                resource.$locals.handlerId = parentHandler.id;
+
+                return resource;
             }
         }
     });
