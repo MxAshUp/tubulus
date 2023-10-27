@@ -80,10 +80,9 @@ module.exports.concatConditions = (conditions, separator) => {
 
     const flatten = (conds, sep) => conds.map(c => {
         if (c._concatSep && c._concatConditions) {
-            const innerSep = c._concatSep;
-            const innerPredicate = flatten(c._concatConditions, innerSep);
+            const innerPredicate = flatten(c._concatConditions, c._concatSep);
             flattenConditions.push(...c._concatConditions);
-            return innerSep !== sep ? `(${innerPredicate})` : innerPredicate;
+            return c._concatSep !== sep ? `(${innerPredicate})` : innerPredicate;
         } else {
             flattenConditions.push(c);
             return `_${flattenConditions.length - 1}(...args)`;
