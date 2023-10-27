@@ -51,8 +51,8 @@ module.exports.resourceCrawler = (options = {}) => {
         mergeMap(async ([resource, handler]) => {
 
             // Maybe the result of this handler already has cached resources
-            if(!handler?.dontCache) {
-                const cachedResources = await Resource.getHandledCache(resource.id, handler.hash);
+            if(!handler.dontCache) {
+                const cachedResources = await Resource.getHandledCache(handler, resource);
                 if(cachedResources.length) {
                     return from(cachedResources);
                 }
