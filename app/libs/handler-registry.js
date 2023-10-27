@@ -14,7 +14,9 @@ module.exports = () => {
     };
 
     const registerHandlers = (handlersToAdd) => {
-        handlers.push(...handlersToAdd.map(buildHandler));
+        const newHandlers = handlersToAdd.map(buildHandler);
+        handlers.push(...newHandlers);
+        return newHandlers;
     }
 
     return {
