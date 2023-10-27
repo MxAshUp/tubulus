@@ -1,6 +1,6 @@
 const cheerio = require('cheerio');
 
-const { every, typeEquals, bindScope } = require('./libs/scope-utilities');
+const { every, typeEquals, bindScope, sequence } = require('./libs/scope-utilities');
 const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = require('./libs/web/scopes');
 
 const { urlResolveHandler, url2HtmlHandler, url2ImageHandler } = require('./libs/web/handlers');
@@ -15,17 +15,22 @@ module.exports = [
     url2HtmlHandler,
     url2ImageHandler,
 
-    ...scopeWikipedia([
+    ...sequence([
         {
+            scope: every(isHtml, hostMatches(/\bwikipedia.org$/)),
             transform: html2Object('json', {
                 title: ($) =>   $('title').text().trim(),
                 image: ($) =>   $('meta[property="og:image"]').attr('content'),
                 content: ($) => $('#mw-content-text').text().trim().slice(0,100),
-            })
+            }),
         },
         {
-            transform: html2Value('url', $ => $('meta[property="og:image"]').attr('content')),
-        },
+            scope: ({data}) => data?.image,
+            transform: (resource) => ({
+                type: 'url',
+                data: resource.data?.image,
+            })
+        }
     ]),
 
     ...scopeHawthornePages([
