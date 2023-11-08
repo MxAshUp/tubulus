@@ -1,44 +1,49 @@
 const cheerio = require('cheerio');
 
-const { every, typeEquals, bindScope, sequence } = require('./libs/scope-utilities');
-const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = require('./libs/web/scopes');
+const { every, typeEquals, bindScope, sequence } = require('../libs/scope-utilities');
+const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = require('../libs/web/scopes');
 
-const { urlResolveHandler, url2HtmlHandler, url2ImageHandler } = require('./libs/web/handlers');
-const { html2Value, html2Object } = require('./libs/web/transformers');
+const { urlResolveHandler, url2HtmlHandler, url2ImageHandler } = require('../libs/web/handlers');
+const { html2Value, html2Object } = require('../libs/web/transformers');
 
 const scopeWikipedia = bindScope(hostMatches(/\bwikipedia.org$/));
 const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
 
 module.exports = [
 
-    ...sequence([
-        ...scopeWikipedia([
-            urlResolveHandler,
-        ]),
+    // ...sequence([
+    //     ...scopeWikipedia([
+    //         urlResolveHandler,
+    //     ]),
+    //     url2HtmlHandler,
+    //     {
+    //         scope: every(isHtml, hostMatches(/\bwikipedia.org$/)),
+    //         transform: html2Object('json', {
+    //             title: ($) =>   $('title').text().trim(),
+    //             image: ($) =>   $('meta[property="og:image"]').attr('content'),
+    //             content: ($) => $('#mw-content-text').text().trim().slice(0,100),
+    //         }),
+    //     },
+    //     {
+    //         scope: ({data}) => data?.image,
+    //         transform: (resource) => ({
+    //             type: 'url',
+    //             data: resource.data?.image,
+    //         })
+    //     },
+    //     urlResolveHandler,
+    //     url2ImageHandler,
+    //     {
+    //         scope: typeEquals('image'),
+    //         transform: () => {
+    //             // nothing
+    //         }
+    //     }
+    // ]),
+
+    ...bindScope(hostEquals('hawthornetheatre.com'))([
         url2HtmlHandler,
-        {
-            scope: every(isHtml, hostMatches(/\bwikipedia.org$/)),
-            transform: html2Object('json', {
-                title: ($) =>   $('title').text().trim(),
-                image: ($) =>   $('meta[property="og:image"]').attr('content'),
-                content: ($) => $('#mw-content-text').text().trim().slice(0,100),
-            }),
-        },
-        {
-            scope: ({data}) => data?.image,
-            transform: (resource) => ({
-                type: 'url',
-                data: resource.data?.image,
-            })
-        },
         urlResolveHandler,
-        url2ImageHandler,
-        {
-            scope: typeEquals('image'),
-            transform: () => {
-                // nothing
-            }
-        }
     ]),
 
     ...scopeHawthornePages([

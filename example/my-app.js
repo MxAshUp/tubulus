@@ -1,35 +1,34 @@
 const fs = require('fs');
-const { resourceCrawler } = require ('./libs/resource-crawler');
+const { resourceCrawler } = require ('../libs/resource-crawler');
 const { mergeMap } = require('rxjs');
 const myHandlers = require('./my-handlers');
-const { setup } = require('./libs/db');
-const handlersRegistry = require('./libs/handler-registry')();
+const db = require('../libs/db-mongo');
+const handlersRegistry = require('../libs/handler-registry')();
 
 // This app crawls random wikipedia page and downloads images to /exports
 
 (async () => {
 
-    const db = await setup();
-    handlersRegistry.registerHandlers(myHandlers)
-
-    const {
-        theMainCrawler$,
-        Resource,
-    } = resourceCrawler({
-        getHandlers: handlersRegistry.getHandlers,
-        db,
+    await db.setup({
+        mongoUrl: 'mongodb://localhost:27017/dance-pdx'
     });
 
     // Seeder
-    console.log("INITIAL:", (await Resource.count({})));
-    
-    new Resource({
+    await db.createResource({
         type: 'url',
         data: 'https://hawthornetheatre.com/events/',
     }).save();
 
+    handlersRegistry.registerHandlers(myHandlers)
 
-    await theMainCrawler$.pipe(mergeMap(async (res) => {
+    const crawler = resourceCrawler({
+        getHandlers: handlersRegistry.getHandlers,
+        db,
+    });
+
+    console.log("INITIAL:", (await db.countResources({})));
+    
+    await crawler.theMainCrawler$.pipe(mergeMap(async (res) => {
         // Custom exporting of data
         if(res.type === 'image') {
             const {fPart = 'untitled', ext = ''} = res.meta.url.match(/\/(?<fPart>[^\/]+)\.(?<ext>[a-z]+)$/i)?.groups || {};
@@ -44,7 +43,7 @@ const handlersRegistry = require('./libs/handler-registry')();
             }
         }
         if(res.type === 'event') {
-            console.log(res);
+            console.log(res.id.toString());
         }
         if(res.type === 'url' && res.meta?.resolved) {
             // console.log(res.data, res.meta?.contentType);
