@@ -10,6 +10,9 @@
   "keywords": [],
   "author": "Ash Woods",
   "license": "ISC",
+  "files": [
+    "libs/"
+  ],
   "dependencies": {
     "axios": "^1.4.0",
     "cheerio": "^1.0.0-rc.12",
