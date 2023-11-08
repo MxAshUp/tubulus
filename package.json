@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "npx jest test/",
     "mongo": "docker run -d --rm -p 27017:27017 mongo"
   },
   "keywords": [],
