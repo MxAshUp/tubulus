@@ -5,3 +5,5 @@ package-lock.json
 *-test/
 exported-data/
 coverage/
+/exports
+/imports
