@@ -1,0 +1,6 @@
+http-cache/
+http-cache*/
+node_modules/
+package-lock.json
+*-test/
+exported-data/
