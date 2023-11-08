@@ -1,7 +1,7 @@
 {
   "name": "tubulus",
   "version": "0.1.0",
-  "description": "",
+  "description": "Event-based Node.js asset pipeline tool for creative coders",
   "main": "index.js",
   "scripts": {
     "test": "npx jest test/",
@@ -9,7 +9,7 @@
   },
   "keywords": [],
   "author": "Ash Woods",
-  "license": "ISC",
+  "license": "MIT",
   "files": [
     "libs/"
   ],
