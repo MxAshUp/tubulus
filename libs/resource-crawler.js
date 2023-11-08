@@ -1,4 +1,4 @@
-const { from, combineLatest, of, fromEvent, pipe, Subject, EMPTY } = require('rxjs');
+const { from, combineLatest, of, pipe, Subject, EMPTY, defer } = require('rxjs');
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
 const { handledResultsToObservable } = require('./utilities.js');
 
@@ -9,22 +9,14 @@ module.exports.resourceCrawler = (options = {}) => {
     } = options;
     
     const {
-        Resource,
-        resourceEvents,
-        fromResourceFind
+        findResources,
+        createResource,
+        findResourcesCached,
     } = db;
 
     // Some possible observables to use
-    const topResources$ =               fromResourceFind({ depth: 0 });
-    const unhandledTopLevelResources$ = fromResourceFind({ handled: false, orphaned: false, depth: 0 });
-    const orphanedResources$ =          fromResourceFind({ handled: false, orphaned: true });
-
-    const newResources$ = fromEvent(resourceEvents, 'insert').pipe(
-        filter(doc => !doc.handled && !doc.orphaned),
-    );
-
-    const updatedCachedResources$ = fromEvent(resourceEvents, 'update').pipe(
-        filter(doc => doc.isFromCache() && !doc.handled && !doc.orphaned),
+    const topResources$ = defer(() => from(findResources({ depth: 0 }))).pipe(
+        mergeAll(),
     );
 
     // Resources emitted with no handler
@@ -39,9 +31,6 @@ module.exports.resourceCrawler = (options = {}) => {
         // If no matching handlers
         mergeMap((resource) => {
             const handlers = getHandlers(resource);
-            
-            // @TODO - should be await
-            resource.setHandled(handlers);
 
             if(!handlers.length) {
                 unhandledResources$.next(resource);
@@ -59,7 +48,7 @@ module.exports.resourceCrawler = (options = {}) => {
 
             // Maybe the result of this handler already has cached resources
             if(!handler.dontCache) {
-                const cachedResources = await Resource.getHandledCache(handler, resource);
+                const cachedResources = await findResourcesCached(handler, resource);
                 if(cachedResources.length) {
                     return from(cachedResources);
                 }
@@ -69,7 +58,7 @@ module.exports.resourceCrawler = (options = {}) => {
             const results = await handler.transform(resource);
             // Create new resources
             return handledResultsToObservable(results).pipe(
-                map((newResourceData) => Resource.create(newResourceData, handler, resource))
+                map((newResourceData) => createResource(newResourceData, handler, resource))
             );
         }),
 
@@ -87,14 +76,10 @@ module.exports.resourceCrawler = (options = {}) => {
 
     const theMainCrawler$ = topResources$.pipe(resourceHandleRecursive);
 
+    // Should we export these?
+    // topResources$,
+    // unhandledResources$,
     return {
         theMainCrawler$,
-        topResources$,
-        unhandledResources$,
-        unhandledTopLevelResources$,
-        orphanedResources$,
-        newResources$,
-        updatedCachedResources$,
-        Resource,
     }
 }
