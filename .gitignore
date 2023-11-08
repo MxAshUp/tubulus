@@ -1,9 +1,5 @@
-http-cache/
-http-cache*/
 node_modules/
 package-lock.json
-*-test/
-exported-data/
 coverage/
-/exports
-/imports
+exports/
+imports/
