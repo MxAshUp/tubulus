@@ -2,6 +2,7 @@ TODO
  - [ ] Index resources by hash of data, rather than object id
  - [ ] Save crawl position in db? (involves .handled, etc)
  - [ ] Wrap errors and turn into resource
+ - [x] eslint
 
 TOOLS
 -  [ ] need way to see unhandled resources

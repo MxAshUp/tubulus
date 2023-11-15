@@ -21,6 +21,7 @@
     "uglify-js": "^3.17.4"
   },
   "devDependencies": {
+    "eslint": "^8.53.0",
     "jest": "^29.7.0"
   }
 }
