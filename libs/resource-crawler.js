@@ -1,6 +1,6 @@
 const { from, combineLatest, of, pipe, Subject, EMPTY, defer } = require('rxjs');
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
-const { handledResultsToObservable } = require('./utilities.js');
+const { handledResultsToObservable, throwIfMissing } = require('./utilities.js');
 
 module.exports.resourceCrawler = (options = {}) => {
     const {
