@@ -31,7 +31,7 @@ const handlersRegistry = require('../libs/handler-registry')();
     await crawler.theMainCrawler$.pipe(mergeMap(async (res) => {
         // Custom exporting of data
         if(res.type === 'image') {
-            const {fPart = 'untitled', ext = ''} = res.meta.url.match(/\/(?<fPart>[^\/]+)\.(?<ext>[a-z]+)$/i)?.groups || {};
+            const {fPart = 'untitled', ext = ''} = res.meta.url.match(/\/(?<fPart>[^/]+)\.(?<ext>[a-z]+)$/i)?.groups || {};
             const fnName = `${fPart}_${res.hash.slice(0,5)}.${ext}`;
             const fPath = `${__dirname}/exports/${fnName}`;
             if(!res.isFromCache() || !fs.existsSync(fPath)) {
