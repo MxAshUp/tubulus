@@ -1,3 +1,5 @@
+![Tubulus logo](/logo.svg)
+
 TODO
  - [ ] Index resources by hash of data, rather than object id
  - [ ] Save crawl position in db? (involves .handled, etc)
