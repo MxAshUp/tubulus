@@ -1,6 +1,7 @@
 const { from, combineLatest, of, pipe, Subject, EMPTY, defer } = require('rxjs');
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
 const { handledResultsToObservable, throwIfMissing } = require('./utilities.js');
+const { catchTransformErrors } = require('./handler-utilities.js');
 
 module.exports.resourceCrawler = (options = {}) => {
     const {
@@ -55,7 +56,7 @@ module.exports.resourceCrawler = (options = {}) => {
             }
 
             // Handle the resource with handler, get the results
-            const results = await handler.transform(resource);
+            const results = await catchTransformErrors(() => handler.transform(resource));
             // Create new resources
             return handledResultsToObservable(results).pipe(
                 map((newResourceData) => createResource(newResourceData, handler, resource))
