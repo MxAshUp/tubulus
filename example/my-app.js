@@ -3,6 +3,7 @@ const { resourceCrawler } = require ('../libs/resource-crawler');
 const { mergeMap } = require('rxjs');
 const myHandlers = require('./my-handlers');
 const db = require('../libs/db-mongo');
+const { toResUrl } = require('../libs/web/resource-types');
 const handlersRegistry = require('../libs/handler-registry')();
 
 // This app crawls random wikipedia page and downloads images to /exports
@@ -14,10 +15,7 @@ const handlersRegistry = require('../libs/handler-registry')();
     });
 
     // Seeder
-    await db.createResource({
-        type: 'url',
-        data: 'https://hawthornetheatre.com/events/',
-    }).save();
+    await db.createResource(toResUrl('https://hawthornetheatre.com/events/')).save();
 
     handlersRegistry.registerHandlers(myHandlers)
 
@@ -43,10 +41,13 @@ const handlersRegistry = require('../libs/handler-registry')();
             }
         }
         if(res.type === 'event') {
-            console.log(res.id.toString());
+            // console.log(res.id.toString());
         }
         if(res.type === 'url' && res.meta?.resolved) {
             // console.log(res.data, res.meta?.contentType);
+        }
+        if(res.type === 'error') {
+            console.error(res);
         }
     })).toPromise();
     

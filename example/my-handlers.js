@@ -1,3 +1,5 @@
+/* es-lint ignore: unused-var */
+
 const cheerio = require('cheerio');
 
 const { every, typeEquals, bindScope, sequence } = require('../libs/scope-utilities');
@@ -5,9 +7,13 @@ const { isHtml, hostEquals, hostMatches, urlOfPageMatches, pathMatches } = requi
 
 const { urlResolveHandler, url2HtmlHandler, url2ImageHandler } = require('../libs/web/handlers');
 const { html2Value, html2Object } = require('../libs/web/transformers');
+const { toResUrl } = require('../libs/web/resource-types');
+const { toResOfType } = require('../libs/resource-utilities');
 
 const scopeWikipedia = bindScope(hostMatches(/\bwikipedia.org$/));
 const scopeHawthornePages = bindScope(isHtml, hostEquals('hawthornetheatre.com'));
+
+const toResEvent = toResOfType('event');
 
 module.exports = [
 
@@ -26,10 +32,7 @@ module.exports = [
     //     },
     //     {
     //         scope: ({data}) => data?.image,
-    //         transform: (resource) => ({
-    //             type: 'url',
-    //             data: resource.data?.image,
-    //         })
+    //         transform: (resource) => toResUrl(resource.data.image)
     //     },
     //     urlResolveHandler,
     //     url2ImageHandler,
@@ -55,10 +58,7 @@ module.exports = [
     
                 const eventPageUrls = $('a#eventTitle').map((i, el) => $(el).attr('href')).get();
     
-                return eventPageUrls.map((url) => ({
-                    type: 'url',
-                    data: url
-                }));
+                return eventPageUrls.map((url) => toResUrl(url));
             }
         },
         {
@@ -86,39 +86,27 @@ module.exports = [
         scope: urlOfPageMatches(/^https:\/\/event\.etix\.com\/ticket\/online\//i),
         transform: (resource) => {
             const $ = cheerio.load(resource.data);
-            return {
-                type: 'event',
-                meta: {
-                    url: resource.meta.url,
-                    canonicalUrl: resource.meta.canonicalUrl,
-                },
-                data: {
-                    description: $('.description[itemprop="description"]').text().trim()
-                }
-            }
+            const eventPartial = {
+                description: $('.description[itemprop="description"]').text().trim()
+            };
+            return toResEvent(eventPartial, {
+                url: resource.meta.url,
+                canonicalUrl: resource.meta.canonicalUrl,
+            });
         }
     },
 
     // Event parser, image getter
     {
         scope: every(typeEquals('event'), (resource) => resource.data?.imageUrl),
-        transform: (resource) => ({
-            type: 'url',
-            data: resource.data?.imageUrl,
-        })
+        transform: (resource) => toResUrl(resource.data.imageUrl)
     },
 
     // Event parser, ticket url getter
     {
         scope: every(typeEquals('event'), (resource) => resource.data?.ticketUrl),
-        transform: (resource) => {
-            return {
-                type: 'url',
-                meta: {
-                    canonicalUrl: resource.meta.url,
-                },
-                data: resource.data?.ticketUrl,
-            };
-        }
+        transform: (resource) => toResUrl(resource.data.ticketUrl, {
+            canonicalUrl: resource.meta.url,
+        })
     }
 ];

@@ -2,6 +2,7 @@ const axios = require('axios');
 const { getFinalUrl } = require('./get-final-url');
 const { throwFormattedError } = require('../utilities');
 const { isUnresolvedUrl, contentTypeOfUrlMatches } = require('./scopes');
+const { toResUrl, toResHtml, toResImage } = require('./resource-types');
 
 module.exports = {
     urlResolveHandler: {
@@ -13,15 +14,11 @@ module.exports = {
                     .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
     
                 // Create and return a new resource
-                return {
-                    type: 'url',
-                    meta: {
-                        ...(resource.meta ? resource.meta : {}),
-                        resolved: true,
-                        contentType: headers['content-type'],
-                    },
-                    data: finalUrl
-                };
+                return toResUrl(finalUrl, {
+                    ...(resource.meta ? resource.meta : {}),
+                    resolved: true,
+                    contentType: headers['content-type'],
+                });
             } catch (e) {
                 // TODO - improve error handling
                 if(/404/.test(e.message)) {
@@ -38,16 +35,12 @@ module.exports = {
                 .catch(throwFormattedError(`Failed to fetch URL: ${resource.data}`));
     
             // Create and return a new resource
-            return {
-                type: 'html',
-                meta: {
-                    ...(resource.meta ? resource.meta : {}),
-                    url: resource.data,
-                    status: response.status,
-                    contentType: response.headers['content-type'],
-                },
-                data: response.data
-            };
+            return toResHtml(response.data, {
+                ...(resource.meta ? resource.meta : {}),
+                url: resource.data,
+                status: response.status,
+                contentType: response.headers['content-type'],
+            });
         }
     },
 
@@ -58,14 +51,10 @@ module.exports = {
             const {data: imageData, headers} = await axios.get(resource.data, {responseType: 'arraybuffer'})
                     .catch(throwFormattedError(`Failed to download image: ${resource.data}`));
     
-            return {
-                type: 'image',
-                meta: {
-                    url: resource.data,
-                    contentType: headers['content-type'],
-                },
-                data: imageData,
-            };
+            return toResImage(imageData, {
+                url: resource.data,
+                contentType: headers['content-type'],
+            });
         }
     },
 }
