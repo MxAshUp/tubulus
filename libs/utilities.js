@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const UglifyJS = require("uglify-js");
 const { from, isObservable, of } = require('rxjs');
+const { resNull } = require('./resource-utilities');
 
 module.exports.throwFormattedError = (errorMessage) => (error) => {
     const formattedError = new Error(`${errorMessage}: ${error.message}`);
@@ -56,11 +57,8 @@ module.exports.handledResultsToObservable = (input) => {
     }
 
     // Return undefined means handler results in nothing
-    // Need to have an empty resource end point to ensure cached
     if(typeof input === "undefined") {
-        return of({
-            type: 'EMPTY',
-        })
+        return of(resNull())
     }
   
     // If it's an object, convert to an observable

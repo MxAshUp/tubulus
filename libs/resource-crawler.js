@@ -2,6 +2,7 @@ const { from, combineLatest, of, pipe, Subject, EMPTY, defer } = require('rxjs')
 const { filter, mergeMap, expand, map, mergeAll } = require('rxjs/operators');
 const { handledResultsToObservable, throwIfMissing } = require('./utilities.js');
 const { catchTransformErrors } = require('./handler-utilities.js');
+const { notResNull } = require('./resource-utilities.js');
 
 module.exports.resourceCrawler = (options = {}) => {
     const {
@@ -25,8 +26,8 @@ module.exports.resourceCrawler = (options = {}) => {
 
     // The main handler of a resource, outputs 0 to many resources
     const resourceHandleTick = pipe(
-        // Nothing to do with the special EMPTY types
-        filter(({type}) => type !== "EMPTY"),
+        // Nothing to do with the special null resources
+        filter(notResNull),
         // Takes a resource, and outputs an array of that resource paired with each matched handler
         // Also marks resource as handled
         // If no matching handlers
