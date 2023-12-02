@@ -1,28 +1,23 @@
 const fs = require('fs');
-const { resourceCrawler } = require ('../libs/resource-crawler');
-const { mergeMap } = require('rxjs');
+const { resourceHandlerOperator } = require ('../libs/resource-handler-operator');
+const { mergeMap, of } = require('rxjs');
 const myHandlers = require('./my-handlers');
 const db = require('../libs/db-mongo');
 const { toResUrl } = require('../libs/web/resource-types');
-const handlersRegistry = require('../libs/handler-registry')();
 
 // This app crawls random wikipedia page and downloads images to /exports
 
 (async () => {
 
-    await db.setup({
-        mongoUrl: 'mongodb://localhost:27017/dance-pdx'
-    });
-
-    // Seeder
-    await db.createResource(toResUrl('https://hawthornetheatre.com/events/')).save();
-
-    handlersRegistry.registerHandlers(myHandlers)
-
-    const crawler = resourceCrawler({
-        getHandlers: handlersRegistry.getHandlers,
-        db,
-    });
+    await db.setup({mongoUrl: 'mongodb://localhost:27017/dance-pdx'});
+    const scopeOperator = resourceHandlerOperator(db.handleResource);
+    
+    const mainOperator = scopeOperator(myHandlers);
+    // We can do subset of operators too: scopeOperator(otherSubsetHandlers)
+    
+    // Seeder. TODO - upsert instead of create
+    const initialResource = await db.createResource(toResUrl('https://hawthornetheatre.com/events/')).save();
+    const crawler = of(initialResource).pipe(mainOperator);
 
     console.log("INITIAL:", (await db.countResources({})));
     

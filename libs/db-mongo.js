@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { addHashToSchema, requiredNonEmptyStringType } = require('./mongo-utilities');
 const { throwIfMissing } = require('./utilities');
+const { handleResourceInterface } = require('./handler-utilities');
 
 // Define the Resource schema
 const resourceSchema = new mongoose.Schema({
@@ -22,6 +23,10 @@ const resourceSchema = new mongoose.Schema({
     methods: {
         isFromCache: function() {
             return !!this.$locals?.fromCache;
+        },
+        // "Commit" is what happens at the end of creation, and before being handled.
+        commit: async function() {
+            return await this.save();
         }
     },
     statics: {
@@ -66,6 +71,7 @@ module.exports.findResources = Resource.find.bind(Resource);
 module.exports.countResources = Resource.count.bind(Resource);
 module.exports.createResource = Resource.create.bind(Resource);
 module.exports.findResourcesCached = Resource.findCached.bind(Resource);
+module.exports.handleResource = handleResourceInterface(Resource.findCached, Resource.create);
 
 module.exports.setup = async function setup(options = {}) {
     const {

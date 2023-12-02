@@ -15,6 +15,7 @@ const bindScope = (...predicates) => (handlers) => handlers.map(({scope, ...hand
 
 const fromHandler = (handler) => (resource) => equalAndDefined(resource.$locals.handlerId, handler.id);
 
+// Restricts handlers to operate in a sequence indicated by the order of the array 
 const sequence = (handlers) => handlers.reduce((handlers, handler, index) => {
     if(index === 0) {
         // The first handler scope is untouched

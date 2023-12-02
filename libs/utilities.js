@@ -45,26 +45,6 @@ module.exports.hashFunction = (fn) => {
     return hashString('md5', code);
 }
 
-module.exports.handledResultsToObservable = (input) => {
-    // If it's already an observable, return as-is
-    if (isObservable(input)) {
-      return input;
-    }
-    
-    // If it's an array, convert to observable stream
-    if (Array.isArray(input)) {
-      return from(input);
-    }
-
-    // Return undefined means handler results in nothing
-    if(typeof input === "undefined") {
-        return of(resNull())
-    }
-  
-    // If it's an object, convert to an observable
-    return of(input);
-}
-
 // Returns true if a and b are equal, but will return false if either a or b are undefined;
 module.exports.equalAndDefined = (a, b) => typeof a !== 'undefined' && a === b;
 
